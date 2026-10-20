@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .index-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: var(--bg-primary);
+        overflow: hidden;
+    }
+
+    .index-gradient {
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0, 212, 170, 0.15) 0%, transparent 50%),
+            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 30% at 50% 50%, rgba(244, 63, 94, 0.1) 0%, transparent 50%);
+        animation: gradientShift 20s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33% { transform: translate(-2%, 2%) scale(1.02); }
+        66% { transform: translate(2%, -2%) scale(0.98); }
+    }
+
+    .index-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 60px 60px;
+        animation: gridMove 30s linear infinite;
+    }
+
+    @keyframes gridMove {
+        0% { background-position: 0 0; }
+        100% { background-position: 60px 60px; }
+    }
+
+    .index-canvas {
+        position: absolute;
+        inset: 0;
+    }
+
+    .hero {
+        position: relative;
+        z-index: var(--z-content);
+        text-align: center;
+        padding: var(--space-3xl) var(--space-lg);
+    }
+
+    .hero-title {
+        font-size: clamp(2.5rem, 8vw, 5rem);
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: var(--space-lg);
+        background: linear-gradient(135deg, var(--fg-primary), var(--accent-primary), var(--accent-secondary));
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: gradientShift 8s ease infinite;
+    }
+
+    .hero-subtitle {
+        font-size: clamp(1rem, 2.5vw, 1.5rem);
+        color: var(--fg-secondary);
+        max-width: 700px;
+        margin: 0 auto var(--space-3xl);
+        line-height: 1.7;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: var(--space-md);
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: var(--space-3xl);
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: var(--space-lg);
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 var(--space-lg);
+    }
+
+    .feature-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-xl);
+        padding: var(--space-xl);
+        transition: all var(--transition-base);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--transition-base);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent-primary);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .feature-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .feature-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-lg);
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: var(--space-md);
+    }
+
+    .feature-icon svg {
+        width: 24px;
+        height: 24px;
+        stroke: var(--bg-primary);
+    }
+
+    .feature-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: var(--space-sm);
+        color: var(--fg-primary);
+    }
+
+    .feature-desc {
+        font-size: 0.875rem;
+        color: var(--fg-secondary);
+        line-height: 1.6;
+    }
+
+    .error-showcase {
+        margin-top: var(--space-3xl);
+        padding: var(--space-2xl) var(--space-lg);
+    }
+
+    .showcase-title {
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: var(--space-xl);
+        color: var(--fg-primary);
+    }
+
+    .error-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: var(--space-md);
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .error-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-md);
+        text-align: center;
+        transition: all var(--transition-base);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .error-card:hover {
+        border-color: var(--accent-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .error-card-code {
+        font-family: var(--font-mono);
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: var(--space-xs);
+    }
+
+    .error-card-name {
+        font-size: 0.75rem;
+        color: var(--fg-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 768px) {
+        .hero {
+            padding: var(--space-2xl) var(--space-md);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="index-bg" role="img" aria-label="Animated gradient background with grid pattern">
+    <div class="index-gradient" aria-hidden="true"></div>
+    <div class="index-grid" aria-hidden="true"></div>
+    <canvas class="index-canvas" id="indexCanvas" aria-hidden="true"></canvas>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1 class="hero-title animate-slide-up">fail-but-pretty</h1>
+    <p class="hero-subtitle animate-slide-up delay-1">
+        Beautiful, interactive error pages that shuffle on every error.
+        <br>10 unique designs • Go back functionality • Deployed with easy-deploy
+    </p>
+
+    <div class="hero-buttons animate-slide-up delay-2">
+        <a href="/demo" class="btn btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            View All Error Pages
+        </a>
+        <a href="/error/404" class="btn btn-secondary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Try a 404
+        </a>
+        <a href="/health" class="btn btn-ghost">
+            Health Check
+        </a>
+    </div>
+
+    <div class="feature-grid">
+        <div class="feature-card animate-slide-up delay-3">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+            </div>
+            <h3 class="feature-title">10 Unique Designs</h3>
+            <p class="feature-desc">Each error triggers a random design: nebula, geometric, matrix, particles, liquid, terminal, aurora, cyberpunk, origami, constellation.</p>
+        </div>
+
+        <div class="feature-card animate-slide-up delay-4">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                </svg>
+            </div>
+            <h3 class="feature-title">Go Back Function</h3>
+            <p class="feature-desc">Smart navigation history tracking via sessions. Falls back to referer header. Fixed position button on every error page.</p>
+        </div>
+
+        <div class="feature-card animate-slide-up delay-5">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <path d="M8 21h8M12 17v4"></path>
+                </svg>
+            </div>
+            <h3 class="feature-title">Deploy with easy-deploy</h3>
+            <p class="feature-desc">Zero-config deployment with health checks, automatic rollback, Caddy reverse proxy, and systemd service management.</p>
+        </div>
+
+        <div class="feature-card animate-slide-up delay-6">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                </svg>
+            </div>
+            <h3 class="feature-title">Respects Preferences</h3>
+            <p class="feature-desc">Honors prefers-reduced-motion, prefers-color-scheme, and reduced motion for accessibility. All animations gracefully degrade.</p>
+        </div>
+    </div>
+
+    <div class="error-showcase animate-slide-up delay-7">
+        <h2 class="showcase-title">Error Code Gallery</h2>
+        <div class="error-cards">
+            {% for code, name in error_codes.items() %}
+            <a href="/error/{{ code }}" class="error-card">
+                <div class="error-card-code">{{ code }}</div>
+                <div class="error-card-name">{{ name }}</div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Index page background particles
+    const canvas = document.getElementById('indexCanvas');
+    if (canvas && window.fbp && !window.fbp.prefersReducedMotion) {
+        const ctx = canvas.getContext('2d');
+        let width, height, dpr;
+        const particles = [];
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function createParticles() {
+            particles.length = 0;
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    size: Math.random() * 2 + 0.5,
+                    opacity: Math.random() * 0.4 + 0.1,
+                    color: ['#00d4aa', '#6366f1', '#f43f5e', '#fbbf24'][Math.floor(Math.random() * 4)],
+                    pulse: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.pulse += 0.01;
+
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
+                if (p.y < 0) p.y = height;
+                if (p.y > height) p.y = 0;
+
+                const pulseOpacity = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color.replace(')', `, ${pulseOpacity})`).replace('rgb', 'rgba');
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        resize();
+        createParticles();
+        animate();
+
+        window.addEventListener('resize', () => {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            resize();
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .aurora-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: var(--bg-primary);
+        overflow: hidden;
+    }
+
+    .aurora-wave {
+        position: absolute;
+        width: 200%;
+        height: 300px;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.5;
+        animation: auroraFlow 15s ease-in-out infinite;
+    }
+
+    .aurora-wave:nth-child(1) {
+        top: -100px;
+        left: -50%;
+        background: linear-gradient(90deg,
+            var(--accent-primary), var(--accent-secondary),
+            var(--accent-tertiary), var(--accent-warm),
+            var(--accent-primary));
+        animation-delay: 0s;
+    }
+
+    .aurora-wave:nth-child(2) {
+        top: 30%;
+        left: -50%;
+        background: linear-gradient(90deg,
+            var(--accent-secondary), var(--accent-tertiary),
+            var(--accent-warm), var(--accent-primary),
+            var(--accent-secondary));
+        animation-delay: -3s;
+        animation-direction: reverse;
+    }
+
+    .aurora-wave:nth-child(3) {
+        bottom: -50px;
+        left: -50%;
+        background: linear-gradient(90deg,
+            var(--accent-tertiary), var(--accent-warm),
+            var(--accent-primary), var(--accent-secondary),
+            var(--accent-tertiary));
+        animation-delay: -6s;
+    }
+
+    .aurora-wave:nth-child(4) {
+        bottom: 20%;
+        left: -50%;
+        background: linear-gradient(90deg,
+            var(--accent-warm), var(--accent-primary),
+            var(--accent-secondary), var(--accent-tertiary),
+            var(--accent-warm));
+        animation-delay: -9s;
+        animation-direction: reverse;
+    }
+
+    @keyframes auroraFlow {
+        0%, 100% {
+            transform: translateX(0) skewX(0deg) scaleY(1);
+            opacity: 0.5;
+        }
+        25% {
+            transform: translateX(-10%) skewX(5deg) scaleY(1.2);
+            opacity: 0.7;
+        }
+        50% {
+            transform: translateX(-25%) skewX(-5deg) scaleY(0.8);
+            opacity: 0.4;
+        }
+        75% {
+            transform: translateX(-15%) skewX(3deg) scaleY(1.1);
+            opacity: 0.6;
+        }
+    }
+
+    .aurora-stars {
+        position: absolute;
+        inset: 0;
+        background-image:
+            radial-gradient(1px 1px at 50px 100px, white, transparent),
+            radial-gradient(1px 1px at 200px 50px, rgba(255,255,255,0.8), transparent),
+            radial-gradient(1.5px 1.5px at 350px 200px, white, transparent),
+            radial-gradient(1px 1px at 500px 150px, rgba(255,255,255,0.6), transparent),
+            radial-gradient(2px 2px at 100px 300px, white, transparent),
+            radial-gradient(1px 1px at 400px 400px, rgba(255,255,255,0.7), transparent);
+        background-repeat: repeat;
+        background-size: 600px 400px;
+        animation: starPulse 4s ease-in-out infinite;
+        opacity: 0.4;
+    }
+
+    @keyframes starPulse {
+        0%, 100% { opacity: 0.4; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.02); }
+    }
+
+    .aurora-canvas {
+        position: absolute;
+        inset: 0;
+    }
+
+    .error-title {
+        background: linear-gradient(135deg,
+            var(--accent-primary), var(--accent-secondary),
+            var(--accent-tertiary), var(--accent-warm));
+        background-size: 300% 300%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: gradientShift 8s ease infinite;
+    }
+
+    @keyframes gradientShift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    .error-message {
+        color: var(--fg-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="aurora-bg" role="img" aria-label="Aurora borealis waves flowing across the sky">
+    <div class="aurora-stars" aria-hidden="true"></div>
+    <div class="aurora-wave" aria-hidden="true"></div>
+    <div class="aurora-wave" aria-hidden="true"></div>
+    <div class="aurora-wave" aria-hidden="true"></div>
+    <div class="aurora-wave" aria-hidden="true"></div>
+    <canvas class="aurora-canvas" id="auroraCanvas" aria-hidden="true"></canvas>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1 class="error-title animate-slide-up">
+        {{ error_code }}
+        <br>
+        <span style="font-size: 0.5em; font-weight: 400;">{{ error_name }}</span>
+    </h1>
+    <p class="error-message animate-slide-up delay-1">
+        The northern lights have obscured<br>the path you were following.
+    </p>
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-2">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Follow the Light
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Aurora particle trails
+    const canvas = document.getElementById('auroraCanvas');
+    if (canvas && window.fbp && !window.fbp.prefersReducedMotion) {
+        const ctx = canvas.getContext('2d');
+        let width, height, dpr;
+        const trails = [];
+        const colors = ['#00d4aa', '#6366f1', '#f43f5e', '#fbbf24'];
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function createTrail() {
+            trails.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5 - 0.2,
+                points: [],
+                maxPoints: 30,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                life: 1,
+                decay: Math.random() * 0.005 + 0.002
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Create new trails occasionally
+            if (Math.random() < 0.02 && trails.length < 50) {
+                createTrail();
+            }
+
+            trails.forEach((trail, i) => {
+                trail.x += trail.vx;
+                trail.y += trail.vy;
+                trail.life -= trail.decay;
+
+                // Add point to trail
+                trail.points.push({x: trail.x, y: trail.y});
+                if (trail.points.length > trail.maxPoints) {
+                    trail.points.shift();
+                }
+
+                // Draw trail
+                if (trail.points.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(trail.points[0].x, trail.points[0].y);
+                    for (let j = 1; j < trail.points.length; j++) {
+                        ctx.lineTo(trail.points[j].x, trail.points[j].y);
+                    }
+                    ctx.strokeStyle = trail.color.replace(')', `, ${trail.life * 0.5})`).replace('rgb', 'rgba');
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+
+                    // Glow
+                    ctx.shadowColor = trail.color;
+                    ctx.shadowBlur = 10;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Remove dead trails
+                if (trail.life <= 0 || trail.y < -50 || trail.x < -50 || trail.x > width + 50) {
+                    trails.splice(i, 1);
+                }
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        resize();
+        // Seed initial trails
+        for (let i = 0; i < 20; i++) createTrail();
+        animate();
+
+        window.addEventListener('resize', () => {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            resize();
+        });
+    }
+</script>
+{% endblock %}

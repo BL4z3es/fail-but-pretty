@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .matrix-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: var(--bg-primary);
+        overflow: hidden;
+    }
+
+    .matrix-rain {
+        position: absolute;
+        inset: 0;
+        font-family: var(--font-mono);
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--accent-primary);
+        opacity: 0.15;
+        pointer-events: none;
+    }
+
+    .matrix-column {
+        position: absolute;
+        top: -100%;
+        white-space: nowrap;
+        animation: matrixFall linear infinite;
+        text-shadow: 0 0 10px var(--accent-primary);
+    }
+
+    @keyframes matrixFall {
+        to { transform: translateY(200vh); }
+    }
+
+    .matrix-glitch {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        opacity: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 212, 170, 0.03) 2px,
+            rgba(0, 212, 170, 0.03) 4px
+        );
+        animation: glitchScan 8s ease-in-out infinite;
+    }
+
+    @keyframes glitchScan {
+        0%, 90%, 100% { opacity: 0; }
+        92% { opacity: 1; }
+        94% { opacity: 0; }
+        96% { opacity: 1; }
+        98% { opacity: 0; }
+    }
+
+    .error-title {
+        font-family: var(--font-mono);
+        position: relative;
+    }
+
+    .error-title::before {
+        content: attr(data-text);
+        position: absolute;
+        left: 2px;
+        top: 0;
+        color: var(--accent-tertiary);
+        overflow: hidden;
+        clip: rect(0, 900px, 0, 0);
+        animation: glitchText 3s infinite linear alternate-reverse;
+    }
+
+    .error-title::after {
+        content: attr(data-text);
+        position: absolute;
+        left: -2px;
+        top: 0;
+        color: var(--accent-secondary);
+        overflow: hidden;
+        clip: rect(0, 900px, 0, 0);
+        animation: glitchText 2s infinite linear alternate-reverse;
+    }
+
+    @keyframes glitchText {
+        0% { clip: rect(44px, 9999px, 56px, 0); }
+        20% { clip: rect(12px, 9999px, 78px, 0); }
+        40% { clip: rect(88px, 9999px, 34px, 0); }
+        60% { clip: rect(66px, 9999px, 12px, 0); }
+        80% { clip: rect(24px, 9999px, 90px, 0); }
+        100% { clip: rect(76px, 9999px, 44px, 0); }
+    }
+
+    .terminal-window {
+        background: rgba(0, 20, 0, 0.9);
+        border: 1px solid var(--accent-primary);
+        border-radius: var(--radius-lg);
+        padding: var(--space-lg);
+        max-width: 700px;
+        width: 90%;
+        margin-top: var(--space-xl);
+        box-shadow: 0 0 40px rgba(0, 212, 170, 0.2);
+        text-align: left;
+    }
+
+    .terminal-header {
+        display: flex;
+        gap: 8px;
+        margin-bottom: var(--space-md);
+        padding-bottom: var(--space-md);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .terminal-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--bg-tertiary);
+    }
+
+    .terminal-dot:nth-child(1) { background: #ff5f56; }
+    .terminal-dot:nth-child(2) { background: #ffbd2e; }
+    .terminal-dot:nth-child(3) { background: #27ca4f; }
+
+    .terminal-line {
+        font-family: var(--font-mono);
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: var(--accent-primary);
+        margin: 4px 0;
+        opacity: 0;
+        animation: terminalType 0.5s ease forwards;
+    }
+
+    .terminal-line.error { color: var(--accent-tertiary); }
+    .terminal-line.success { color: #27ca4f; }
+    .terminal-line.warning { color: #ffbd2e; }
+    .terminal-line.muted { color: var(--fg-muted); }
+
+    @keyframes terminalType {
+        to { opacity: 1; }
+    }
+
+    .cursor {
+        display: inline-block;
+        width: 8px;
+        height: 1.2em;
+        background: var(--accent-primary);
+        animation: blink 1s infinite;
+        vertical-align: text-bottom;
+        margin-left: 2px;
+    }
+
+    @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+    }
+
+    .scanlines {
+        position: fixed;
+        inset: 0;
+        z-index: calc(var(--z-content) + 1);
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.1) 2px,
+            rgba(0, 0, 0, 0.1) 4px
+        );
+        animation: scanlinesMove 0.1s linear infinite;
+    }
+
+    @keyframes scanlinesMove {
+        0% { background-position: 0 0; }
+        100% { background-position: 0 4px; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="matrix-bg" role="img" aria-label="Matrix-style falling code rain animation">
+    <div class="matrix-rain" id="matrixRain"></div>
+    <div class="matrix-glitch"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1 class="error-title animate-slide-up" data-text="{{ error_code }}">
+        {{ error_code }}
+    </h1>
+    <p class="error-message animate-slide-up delay-1" style="font-family: var(--font-mono); color: var(--accent-primary);">
+        SYSTEM ERROR: {{ error_name }}
+    </p>
+
+    <div class="terminal-window animate-slide-up delay-2">
+        <div class="terminal-header">
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+            <div class="terminal-dot"></div>
+        </div>
+        <div class="terminal-line" style="animation-delay: 100ms;">> INITIALIZING ERROR HANDLER...</div>
+        <div class="terminal-line" style="animation-delay: 300ms;">> SCANNING REQUEST PATH: <span class="cursor"></span></div>
+        <div class="terminal-line error" style="animation-delay: 500ms;">> ERROR {{ error_code }} DETECTED: {{ error_name }}</div>
+        <div class="terminal-line warning" style="animation-delay: 700ms;">> PATH RESOLUTION FAILED</div>
+        <div class="terminal-line muted" style="animation-delay: 900ms;">> STACK TRACE UNAVAILABLE</div>
+        <div class="terminal-line success" style="animation-delay: 1100ms;">> FALLBACK ROUTE ENGAGED<span class="cursor"></span></div>
+    </div>
+
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-3" style="font-family: var(--font-mono);">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-4" style="font-family: var(--font-mono);">
+        <span style="margin-right: 8px;">$</span> cd {{ previous_url | replace('/', '') | default('..', true) }}
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Matrix rain effect
+    const rainContainer = document.getElementById('matrixRain');
+    if (rainContainer && window.fbp && !window.fbp.prefersReducedMotion) {
+        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const columns = Math.floor(window.innerWidth / 20);
+        const drops = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = {
+                x: i * 20 + Math.random() * 20,
+                y: Math.random() * -1000,
+                speed: Math.random() * 2 + 1,
+                length: Math.floor(Math.random() * 20) + 10,
+                chars: []
+            };
+            for (let j = 0; j < drops[i].length; j++) {
+                drops[i].chars.push(chars[Math.floor(Math.random() * chars.length)]);
+            }
+        }
+
+        function createMatrixColumns() {
+            rainContainer.innerHTML = '';
+            drops.forEach((drop, i) => {
+                const col = document.createElement('div');
+                col.className = 'matrix-column';
+                col.style.left = drop.x + 'px';
+                col.style.top = drop.y + 'px';
+                col.style.animationDuration = (20 / drop.speed) + 's';
+                col.style.animationDelay = (Math.random() * 5) + 's';
+                col.style.opacity = 0.1 + Math.random() * 0.1;
+
+                let text = '';
+                for (let j = 0; j < drop.length; j++) {
+                    const char = drop.chars[j];
+                    const opacity = 1 - j / drop.length;
+                    const color = j === 0 ? '#fff' : (j < 3 ? '#00d4aa' : '#006644');
+                    text += `<span style="color: ${color}; opacity: ${opacity}">${char}</span><br>`;
+                }
+                col.innerHTML = text;
+                rainContainer.appendChild(col);
+            });
+        }
+
+        createMatrixColumns();
+
+        window.addEventListener('resize', () => {
+            clearTimeout(window.matrixResizeTimer);
+            window.matrixResizeTimer = setTimeout(createMatrixColumns, 100);
+        });
+    }
+</script>
+{% endblock %}

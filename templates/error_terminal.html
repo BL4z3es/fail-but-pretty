@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .terminal-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: #0d1117;
+        overflow: hidden;
+    }
+
+    .terminal-scanlines {
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.15) 2px,
+            rgba(0, 0, 0, 0.15) 4px
+        );
+        pointer-events: none;
+        animation: scanMove 0.1s linear infinite;
+    }
+
+    @keyframes scanMove {
+        0% { background-position: 0 0; }
+        100% { background-position: 0 4px; }
+    }
+
+    .terminal-vignette {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.8) 100%);
+        pointer-events: none;
+    }
+
+    .terminal-canvas {
+        position: absolute;
+        inset: 0;
+    }
+
+    .terminal-window {
+        position: relative;
+        z-index: var(--z-content);
+        background: rgba(13, 17, 23, 0.95);
+        border: 1px solid #30363d;
+        border-radius: var(--radius-lg);
+        max-width: 800px;
+        width: 90%;
+        box-shadow:
+            0 0 0 1px rgba(88, 166, 255, 0.1),
+            0 20px 60px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .terminal-titlebar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: var(--space-sm) var(--space-md);
+        background: #161b22;
+        border-bottom: 1px solid #30363d;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .terminal-button {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .terminal-button.close { background: #ff5f56; }
+    .terminal-button.minimize { background: #ffbd2e; }
+    .terminal-button.maximize { background: #27ca4f; }
+
+    .terminal-title {
+        flex: 1;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: #8b949e;
+        text-align: center;
+    }
+
+    .terminal-body {
+        padding: var(--space-lg);
+        font-family: var(--font-mono);
+        font-size: 0.875rem;
+        line-height: 1.7;
+        color: #e6edf3;
+    }
+
+    .terminal-prompt {
+        color: #58a6ff;
+    }
+
+    .terminal-path { color: #a5d6ff; }
+    .terminal-error { color: #f85149; }
+    .terminal-success { color: #3fb950; }
+    .terminal-warning { color: #d29922; }
+    .terminal-muted { color: #8b949e; }
+    .terminal-command { color: #ffa657; }
+
+    .terminal-cursor {
+        display: inline-block;
+        width: 8px;
+        height: 1.2em;
+        background: #58a6ff;
+        animation: cursorBlink 1s infinite;
+        vertical-align: text-bottom;
+        margin-left: 2px;
+    }
+
+    @keyframes cursorBlink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+    }
+
+    .terminal-line {
+        opacity: 0;
+        transform: translateX(-10px);
+        animation: lineAppear 0.3s ease forwards;
+    }
+
+    @keyframes lineAppear {
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    .glitch-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: calc(var(--z-content) - 1);
+        pointer-events: none;
+        opacity: 0;
+    }
+
+    .glitch-overlay.active {
+        animation: glitchFlash 0.1s ease;
+    }
+
+    @keyframes glitchFlash {
+        0%, 100% { opacity: 0; }
+        50% { opacity: 0.05; background: rgba(248, 81, 73, 0.1); }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="terminal-bg" role="img" aria-label="Retro terminal aesthetic with scanlines">
+    <div class="terminal-scanlines" aria-hidden="true"></div>
+    <div class="terminal-vignette" aria-hidden="true"></div>
+    <canvas class="terminal-canvas" id="terminalCanvas" aria-hidden="true"></canvas>
+    <div class="glitch-overlay" id="glitchOverlay" aria-hidden="true"></div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="terminal-window animate-slide-up">
+        <div class="terminal-titlebar">
+            <div class="terminal-button close"></div>
+            <div class="terminal-button minimize"></div>
+            <div class="terminal-button maximize"></div>
+            <div class="terminal-title">fail-but-pretty - error.log</div>
+        </div>
+        <div class="terminal-body">
+            <div class="terminal-line" style="animation-delay: 100ms;">
+                <span class="terminal-prompt">$</span>
+                <span class="terminal-path"> ~</span>
+                <span class="terminal-command"> curl -X GET "{{ request.url.path }}"</span>
+            </div>
+            <div class="terminal-line" style="animation-delay: 300ms;">
+                <span class="terminal-prompt">></span> Establishing connection...
+            </div>
+            <div class="terminal-line" style="animation-delay: 500ms;">
+                <span class="terminal-prompt">></span> Resolving route...
+            </div>
+            <div class="terminal-line terminal-error" style="animation-delay: 700ms;">
+                <span class="terminal-prompt">!</span> ERROR {{ error_code }}: {{ error_name }}
+            </div>
+            <div class="terminal-line terminal-warning" style="animation-delay: 900ms;">
+                <span class="terminal-prompt">!</span> Route not found in registry
+            </div>
+            <div class="terminal-line terminal-muted" style="animation-delay: 1100ms;">
+                <span class="terminal-prompt">#</span> Checking fallback routes...
+            </div>
+            <div class="terminal-line terminal-muted" style="animation-delay: 1300ms;">
+                <span class="terminal-prompt">#</span> No matches found
+            </div>
+            <div class="terminal-line terminal-success" style="animation-delay: 1500ms;">
+                <span class="terminal-prompt">></span> Rendering error page <span class="terminal-cursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <p class="error-message animate-slide-up delay-4" style="margin-top: var(--space-xl); font-family: var(--font-mono); color: var(--accent-primary);">
+        Exit code: {{ error_code }}<br>
+        Segmentation fault (core dumped)
+    </p>
+
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-5" style="font-family: var(--font-mono);">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+
+    <a href="{{ previous_url }}" class="btn btn-secondary animate-slide-up delay-6" style="font-family: var(--font-mono); margin-top: var(--space-lg);">
+        <span class="terminal-prompt" style="margin-right: 8px;">$</span> cd ..
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Terminal background effects
+    const canvas = document.getElementById('terminalCanvas');
+    const glitchOverlay = document.getElementById('glitchOverlay');
+
+    if (canvas && window.fbp && !window.fbp.prefersReducedMotion) {
+        const ctx = canvas.getContext('2d');
+        let width, height, dpr;
+        const columns = [];
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$@#%&*()[]{}|<>';
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function initColumns() {
+            columns.length = 0;
+            const colWidth = 15;
+            const cols = Math.ceil(width / colWidth);
+            for (let i = 0; i < cols; i++) {
+                columns.push({
+                    x: i * colWidth,
+                    y: Math.random() * -height,
+                    speed: Math.random() * 0.5 + 0.2,
+                    chars: Array.from({length: Math.floor(Math.random() * 10) + 5}, () =>
+                        chars[Math.floor(Math.random() * chars.length)]
+                    ),
+                    opacity: Math.random() * 0.1 + 0.02
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.font = '12px "JetBrains Mono", monospace';
+            ctx.textBaseline = 'top';
+
+            columns.forEach(col => {
+                col.y += col.speed;
+                if (col.y > height + 100) {
+                    col.y = -100 - Math.random() * 200;
+                    col.speed = Math.random() * 0.5 + 0.2;
+                    col.chars = Array.from({length: Math.floor(Math.random() * 10) + 5}, () =>
+                        chars[Math.floor(Math.random() * chars.length)]
+                    );
+                }
+
+                col.chars.forEach((char, i) => {
+                    const y = col.y + i * 16;
+                    if (y > -20 && y < height + 20) {
+                        ctx.fillStyle = `rgba(88, 166, 255, ${col.opacity * (1 - i / col.chars.length)})`;
+                        ctx.fillText(char, col.x, y);
+                    }
+                });
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Random glitch flashes
+        function triggerGlitch() {
+            if (glitchOverlay && Math.random() < 0.001) {
+                glitchOverlay.classList.add('active');
+                setTimeout(() => glitchOverlay.classList.remove('active'), 100);
+            }
+        }
+
+        function animateWithGlitch() {
+            animate();
+            triggerGlitch();
+            requestAnimationFrame(animateWithGlitch);
+        }
+
+        resize();
+        initColumns();
+        animateWithGlitch();
+
+        window.addEventListener('resize', () => {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            resize();
+            initColumns();
+        });
+    }
+</script>
+{% endblock %}

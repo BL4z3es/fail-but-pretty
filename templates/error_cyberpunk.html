@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .cyberpunk-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: #0a0a0f;
+        overflow: hidden;
+    }
+
+    .cyberpunk-grid {
+        position: absolute;
+        inset: -50%;
+        background-image:
+            linear-gradient(rgba(0, 212, 170, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 212, 170, 0.1) 1px, transparent 1px);
+        background-size: 60px 60px;
+        transform: perspective(500px) rotateX(60deg) translateZ(-100px);
+        transform-origin: center bottom;
+        animation: gridPulse 4s ease-in-out infinite;
+    }
+
+    @keyframes gridPulse {
+        0%, 100% { opacity: 0.3; filter: brightness(1); }
+        50% { opacity: 0.6; filter: brightness(1.5); }
+    }
+
+    .cyberpunk-scanlines {
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 3px,
+            rgba(0, 0, 0, 0.2) 3px,
+            rgba(0, 0, 0, 0.2) 6px
+        );
+        pointer-events: none;
+        animation: scanMove 0.1s linear infinite;
+    }
+
+    @keyframes scanMove {
+        0% { background-position: 0 0; }
+        100% { background-position: 0 6px; }
+    }
+
+    .cyberpunk-glitch {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 2px,
+            rgba(244, 63, 94, 0.1) 2px,
+            rgba(244, 63, 94, 0.1) 4px
+        );
+    }
+
+    .cyberpunk-glitch.active {
+        animation: glitchHorizontal 0.1s ease;
+    }
+
+    @keyframes glitchHorizontal {
+        0%, 100% { opacity: 0; transform: translateX(0); }
+        20% { opacity: 0.3; transform: translateX(-10px); }
+        40% { opacity: 0; transform: translateX(5px); }
+        60% { opacity: 0.2; transform: translateX(-5px); }
+        80% { opacity: 0; transform: translateX(0); }
+    }
+
+    .neon-border {
+        position: relative;
+        padding: var(--space-lg);
+        background: rgba(10, 10, 15, 0.9);
+        border-radius: var(--radius-lg);
+    }
+
+    .neon-border::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: calc(var(--radius-lg) + 2px);
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+        z-index: -1;
+        filter: blur(8px);
+        opacity: 0.5;
+    }
+
+    .neon-border::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: var(--radius-lg);
+        border: 1px solid transparent;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary)) border-box;
+        -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+    }
+
+    .error-title {
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+
+    .glitch-text {
+        position: relative;
+        color: var(--fg-primary);
+    }
+
+    .glitch-text::before,
+    .glitch-text::after {
+        content: attr(data-text);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        clip: rect(0, 900px, 0, 0);
+    }
+
+    .glitch-text::before {
+        color: var(--accent-tertiary);
+        animation: glitchText 2.5s infinite linear alternate-reverse;
+    }
+
+    .glitch-text::after {
+        color: var(--accent-secondary);
+        animation: glitchText 3s infinite linear alternate-reverse;
+    }
+
+    @keyframes glitchText {
+        0% { clip: rect(10px, 9999px, 50px, 0); }
+        10% { clip: rect(80px, 9999px, 20px, 0); }
+        20% { clip: rect(30px, 9999px, 90px, 0); }
+        30% { clip: rect(60px, 9999px, 10px, 0); }
+        40% { clip: rect(5px, 9999px, 70px, 0); }
+        50% { clip: rect(40px, 9999px, 80px, 0); }
+        60% { clip: rect(90px, 9999px, 30px, 0); }
+        70% { clip: rect(20px, 9999px, 60px, 0); }
+        80% { clip: rect(70px, 9999px, 40px, 0); }
+        90% { clip: rect(50px, 9999px, 10px, 0); }
+        100% { clip: rect(30px, 9999px, 80px, 0); }
+    }
+
+    .cyber-stats {
+        display: flex;
+        gap: var(--space-xl);
+        margin: var(--space-xl) 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .stat-item {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--fg-muted);
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .btn-cyber {
+        position: relative;
+        background: transparent;
+        border: 1px solid var(--accent-primary);
+        color: var(--accent-primary);
+        overflow: hidden;
+    }
+
+    .btn-cyber::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        transform: translateX(-101%);
+        transition: transform var(--transition-base);
+        z-index: -1;
+    }
+
+    .btn-cyber:hover::before {
+        transform: translateX(0);
+    }
+
+    .btn-cyber:hover {
+        color: var(--bg-primary);
+        border-color: transparent;
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="cyberpunk-bg" role="img" aria-label="Cyberpunk grid with glitch effects">
+    <div class="cyberpunk-grid" aria-hidden="true"></div>
+    <div class="cyberpunk-scanlines" aria-hidden="true"></div>
+    <div class="cyberpunk-glitch" id="glitchOverlay" aria-hidden="true"></div>
+    <canvas class="particle-canvas" id="cyberCanvas" aria-hidden="true"></canvas>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="neon-border animate-slide-up" style="max-width: 600px; width: 90%;">
+        <h1 class="error-title glitch-text animate-slide-up" data-text="ERROR {{ error_code }}">
+            ERROR {{ error_code }}
+        </h1>
+        <p class="error-message animate-slide-up delay-1" style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.875rem;">
+            {{ error_name }}
+        </p>
+
+        <div class="cyber-stats animate-slide-up delay-2">
+            <div class="stat-item">
+                <div class="stat-value" id="statCode">{{ error_code }}</div>
+                <div>STATUS</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statLatency">0ms</div>
+                <div>LATENCY</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="statPackets">0%</div>
+                <div>LOSS</div>
+            </div>
+        </div>
+
+        {% if error_detail %}
+        <div class="error-detail animate-slide-up delay-3" style="font-family: var(--font-mono); border-color: var(--accent-tertiary);">
+            {{ error_detail }}
+        </div>
+        {% endif %}
+
+        <a href="{{ previous_url }}" class="btn btn-cyber animate-slide-up delay-4" style="margin-top: var(--space-md);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            JACK OUT
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Cyberpunk glitch effects and stats
+    const canvas = document.getElementById('cyberCanvas');
+    const glitchOverlay = document.getElementById('glitchOverlay');
+    const statLatency = document.getElementById('statLatency');
+    const statPackets = document.getElementById('statPackets');
+
+    if (canvas && window.fbp && !window.fbp.prefersReducedMotion) {
+        const ctx = canvas.getContext('2d');
+        let width, height, dpr;
+        const nodes = [];
+        const connections = [];
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function initNodes() {
+            nodes.length = 0;
+            const cols = 12, rows = 8;
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    nodes.push({
+                        x: (x / (cols - 1)) * width,
+                        y: (y / (rows - 1)) * height,
+                        baseX: (x / (cols - 1)) * width,
+                        baseY: (y / (rows - 1)) * height,
+                        offsetX: 0,
+                        offsetY: 0,
+                        pulse: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            // Create connections
+            connections.length = 0;
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[i].baseX - nodes[j].baseX;
+                    const dy = nodes[i].baseY - nodes[j].baseY;
+                    if (Math.sqrt(dx * dx + dy * dy) < 150) {
+                        connections.push([i, j]);
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            const time = Date.now() * 0.001;
+
+            // Update nodes
+            nodes.forEach((node, i) => {
+                node.pulse += 0.02;
+                node.offsetX = Math.sin(time + i * 0.5) * 10;
+                node.offsetY = Math.cos(time * 0.7 + i * 0.3) * 10;
+                node.x = node.baseX + node.offsetX;
+                node.y = node.baseY + node.offsetY;
+            });
+
+            // Draw connections
+            ctx.strokeStyle = 'rgba(0, 212, 170, 0.1)';
+            ctx.lineWidth = 0.5;
+            connections.forEach(([a, b]) => {
+                const n1 = nodes[a], n2 = nodes[b];
+                ctx.beginPath();
+                ctx.moveTo(n1.x, n1.y);
+                ctx.lineTo(n2.x, n2.y);
+                ctx.stroke();
+            });
+
+            // Draw nodes
+            nodes.forEach(node => {
+                const pulseOpacity = 0.3 + 0.4 * Math.sin(node.pulse);
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 3 + Math.sin(node.pulse) * 2, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 212, 170, ${pulseOpacity})`;
+                ctx.fill();
+
+                // Outer glow
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 212, 170, ${pulseOpacity * 0.1})`;
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Random glitch
+        function triggerGlitch() {
+            if (glitchOverlay && Math.random() < 0.003) {
+                glitchOverlay.classList.add('active');
+                setTimeout(() => glitchOverlay.classList.remove('active'), 100);
+            }
+        }
+
+        function animateLoop() {
+            animate();
+            triggerGlitch();
+            requestAnimationFrame(animateLoop);
+        }
+
+        // Animate stats
+        let latency = 0;
+        let packets = 0;
+        function animateStats() {
+            latency = Math.floor(Math.random() * 200) + 50;
+            packets = (Math.random() * 5).toFixed(1);
+            if (statLatency) statLatency.textContent = latency + 'ms';
+            if (statPackets) statPackets.textContent = packets + '%';
+            setTimeout(animateStats, 1000);
+        }
+
+        resize();
+        initNodes();
+        animateLoop();
+        animateStats();
+
+        window.addEventListener('resize', () => {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            resize();
+            initNodes();
+        });
+    }
+</script>
+{% endblock %}

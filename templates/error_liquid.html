@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .liquid-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: var(--bg-primary);
+        overflow: hidden;
+    }
+
+    .liquid-blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px) contrast(30%);
+        animation: blobMorph 20s ease-in-out infinite;
+    }
+
+    .liquid-blob:nth-child(1) {
+        width: 400px;
+        height: 400px;
+        top: -100px;
+        left: -100px;
+        background: var(--accent-primary);
+        animation-delay: 0s;
+    }
+
+    .liquid-blob:nth-child(2) {
+        width: 350px;
+        height: 350px;
+        bottom: -80px;
+        right: -80px;
+        background: var(--accent-secondary);
+        animation-delay: -5s;
+    }
+
+    .liquid-blob:nth-child(3) {
+        width: 300px;
+        height: 300px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--accent-tertiary);
+        animation-delay: -10s;
+    }
+
+    .liquid-blob:nth-child(4) {
+        width: 250px;
+        height: 250px;
+        top: 20%;
+        right: 10%;
+        background: var(--accent-warm);
+        animation-delay: -15s;
+    }
+
+    @keyframes blobMorph {
+        0%, 100% {
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            transform: translate(0, 0) rotate(0deg);
+        }
+        12.5% {
+            border-radius: 40% 60% 70% 30% / 40% 70% 30% 60%;
+            transform: translate(30px, -20px) rotate(45deg);
+        }
+        25% {
+            border-radius: 70% 30% 40% 60% / 70% 40% 60% 30%;
+            transform: translate(-20px, 40px) rotate(90deg);
+        }
+        37.5% {
+            border-radius: 30% 70% 60% 40% / 30% 60% 40% 70%;
+            transform: translate(-40px, -30px) rotate(135deg);
+        }
+        50% {
+            border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            transform: translate(20px, 30px) rotate(180deg);
+        }
+        62.5% {
+            border-radius: 60% 40% 30% 70% / 40% 60% 70% 30%;
+            transform: translate(-30px, 20px) rotate(225deg);
+        }
+        75% {
+            border-radius: 40% 60% 70% 30% / 70% 30% 40% 60%;
+            transform: translate(40px, -40px) rotate(270deg);
+        }
+        87.5% {
+            border-radius: 70% 30% 40% 60% / 30% 70% 60% 40%;
+            transform: translate(-20px, -30px) rotate(315deg);
+        }
+    }
+
+    .liquid-canvas {
+        position: absolute;
+        inset: 0;
+    }
+
+    .error-title {
+        text-shadow:
+            0 0 20px var(--glow-primary),
+            0 0 40px var(--glow-secondary),
+            0 0 60px var(--glow-tertiary);
+    }
+
+    .liquid-wave {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 200%;
+        height: 150px;
+        background: linear-gradient(180deg, transparent, rgba(0, 212, 170, 0.1));
+        mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 1200 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,60 C300,120 600,0 900,60 C1200,120 1200,60 1200,60 L1200,120 L0,120 Z' fill='white'/%3E%3C/svg%3E");
+        -webkit-mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 1200 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,60 C300,120 600,0 900,60 C1200,120 1200,60 1200,60 L1200,120 L0,120 Z' fill='white'/%3E%3C/svg%3E");
+        animation: waveFlow 8s ease-in-out infinite;
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    @keyframes waveFlow {
+        0%, 100% { transform: translateX(0) translateY(0); }
+        50% { transform: translateX(-25%) translateY(20px); }
+    }
+
+    .error-message {
+        position: relative;
+    }
+
+    .error-message::before,
+    .error-message::after {
+        content: '';
+        position: absolute;
+        width: 60px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .error-message::before { right: 100%; margin-right: 20px; }
+    .error-message::after { left: 100%; margin-left: 20px; }
+
+    @media (max-width: 600px) {
+        .error-message::before,
+        .error-message::after { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="liquid-bg" role="img" aria-label="Morphing liquid blobs with flowing colors">
+    <div class="liquid-blob"></div>
+    <div class="liquid-blob"></div>
+    <div class="liquid-blob"></div>
+    <div class="liquid-blob"></div>
+    <div class="liquid-wave"></div>
+    <canvas class="liquid-canvas" id="liquidCanvas" aria-hidden="true"></canvas>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1 class="error-title animate-slide-up">
+        {{ error_code }}
+        <br>
+        <span style="font-size: 0.5em; font-weight: 400;">{{ error_name }}</span>
+    </h1>
+    <p class="error-message animate-slide-up delay-1">
+        The request melted away<br>into a pool of possibilities.
+    </p>
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-2">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Flow Back
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Liquid ripple effect on canvas
+    const canvas = document.getElementById('liquidCanvas');
+    if (canvas && window.fbp && !window.fbp.prefersReducedMotion) {
+        const ctx = canvas.getContext('2d');
+        let width, height, dpr;
+        const ripples = [];
+        let lastRipple = 0;
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function createRipple(x, y, color) {
+            ripples.push({
+                x, y,
+                radius: 0,
+                maxRadius: Math.random() * 200 + 150,
+                speed: Math.random() * 2 + 1,
+                color: color || ['#00d4aa', '#6366f1', '#f43f5e', '#fbbf24'][Math.floor(Math.random() * 4)],
+                opacity: 0.5,
+                width: 2
+            });
+        }
+
+        // Auto create ripples
+        function autoRipple() {
+            const now = Date.now();
+            if (now - lastRipple > 800) {
+                createRipple(
+                    Math.random() * width,
+                    Math.random() * height
+                );
+                lastRipple = now;
+            }
+        }
+
+        function update() {
+            autoRipple();
+
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                const r = ripples[i];
+                r.radius += r.speed;
+                r.opacity = 0.5 * (1 - r.radius / r.maxRadius);
+                r.width = Math.max(0.5, 3 * (1 - r.radius / r.maxRadius));
+
+                if (r.radius > r.maxRadius || r.opacity <= 0) {
+                    ripples.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            ripples.forEach(r => {
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = r.color.replace(')', `, ${r.opacity})`).replace('rgb', 'rgba');
+                ctx.lineWidth = r.width;
+                ctx.stroke();
+
+                // Inner glow
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, r.radius * 0.95, 0, Math.PI * 2);
+                ctx.strokeStyle = r.color.replace(')', `, ${r.opacity * 0.5})`).replace('rgb', 'rgba');
+                ctx.lineWidth = r.width * 0.5;
+                ctx.stroke();
+            });
+        }
+
+        function animate() {
+            update();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // Mouse interaction
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            if (Math.random() < 0.1) {
+                createRipple(e.clientX - rect.left, e.clientY - rect.top);
+            }
+        });
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    createRipple(
+                        e.clientX - rect.left + (Math.random() - 0.5) * 50,
+                        e.clientY - rect.top + (Math.random() - 0.5) * 50
+                    );
+                }, i * 50);
+            }
+        });
+
+        resize();
+        animate();
+
+        window.addEventListener('resize', () => {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            resize();
+        });
+    }
+</script>
+{% endblock %}
