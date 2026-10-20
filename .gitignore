@@ -1,3 +1,4 @@
 .easy-deploy/
 env/
 .env
+*.log

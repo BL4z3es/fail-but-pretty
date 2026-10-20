@@ -26,15 +26,14 @@ Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=-/etc/fail-but-pretty/fail-but-pretty.env
 
 # CHECK THIS LINE: it is a starting point, not a guess about your entry point.
-ExecStart=/srv/fail-but-pretty/env/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8000 --proxy-headers
+ExecStart=/srv/fail-but-pretty/env/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8030 --proxy-headers
 
 Restart=on-failure
 RestartSec=5s
 
-# The whole filesystem is read-only to this process except WRITABLE_DIRS:
-# a bug in the application cannot rewrite the code that serves it. The dash
-# lets the unit start before install.sh has created the directory.
-ReadWritePaths=-/srv/fail-but-pretty/data
+# The whole filesystem is read-only to this process: a bug in the
+# application cannot rewrite the code that serves it. WRITABLE_DIRS is empty,
+# so there is no ReadWritePaths= line.
 
 NoNewPrivileges=true
 PrivateTmp=true

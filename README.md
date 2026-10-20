@@ -124,17 +124,17 @@ Key settings in `deploy/easy-deploy.conf`:
 ```bash
 NAME=fail-but-pretty
 STACK=python
-PORT=8000
-SITE=fail-but-pretty.example.com  # Your domain
+PORT=8030
+SITE=fail.nebula-studios.net
 SERVICE_USER=your-user
 PREFIX=/srv/fail-but-pretty
-HEALTH_URLS="http://127.0.0.1:8000/health"
+HEALTH_URLS="http://127.0.0.1:8030/health http://127.0.0.1:8030/"
 ```
 
 ## Deployment Architecture
 
 ```
-Internet → Caddy (port 80/443, TLS) → FastAPI (127.0.0.1:8000)
+Internet → Caddy (port 80/443, TLS) → FastAPI (127.0.0.1:8030)
                                 ↓
                         systemd service
                                 ↓
@@ -142,7 +142,7 @@ Internet → Caddy (port 80/443, TLS) → FastAPI (127.0.0.1:8000)
 ```
 
 - **Caddy**: Automatic HTTPS, reverse proxy, static file serving
-- **FastAPI**: Runs on loopback only (port 8000), behind Caddy
+- **FastAPI**: Runs on loopback only (port 8030), behind Caddy
 - **systemd**: Manages the FastAPI process with security hardening
 - **easy-deploy**: GitHub Actions → SSH → deploy.sh → health check → rollback on failure
 
