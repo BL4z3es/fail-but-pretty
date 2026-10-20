@@ -24,7 +24,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Error page templates - 10 unique designs
+# Error page templates - 15 unique designs
 ERROR_TEMPLATES = [
     "error_nebula.html",       # Cosmic nebula theme
     "error_geometric.html",    # Geometric shapes animation
@@ -35,7 +35,12 @@ ERROR_TEMPLATES = [
     "error_aurora.html",       # Aurora borealis waves
     "error_cyberpunk.html",    # Cyberpunk glitch effects
     "error_origami.html",      # Paper folding animations
-    "error_constellation.html" # Star constellation drawing
+    "error_constellation.html", # Star constellation drawing
+    "error_blueprint.html",    # Architectural blueprint with a missing span
+    "error_synthwave.html",    # Neon sunset over a retro grid
+    "error_deepsea.html",      # Bioluminescent jellyfish in the deep
+    "error_ink.html",          # Sumi-e ink blooming on paper
+    "error_kaleidoscope.html", # Mirrored light you paint with the pointer
 ]
 
 ERROR_CODES = {
@@ -316,6 +321,36 @@ TEMPLATE_METADATA = [
         "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 2 15 8 18 12 15 16 12 2 9 8 6 12 9 16"></polyline></svg>',
         "colors": {"primary": "#00d4aa", "secondary": "#fbbf24"},
         "description": "Click to create stars that automatically connect into constellations."
+    },
+    {
+        "name": "Blueprint",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"></rect><path d="M3 9h18M9 3v18"></path></svg>',
+        "colors": {"primary": "#7fd1ff", "secondary": "#0a2540"},
+        "description": "A technical drawing that sketches itself, with a bridge that was never finished."
+    },
+    {
+        "name": "Synthwave",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="9" r="5"></circle><path d="M2 15h20M5 19h14M8 22h8"></path></svg>',
+        "colors": {"primary": "#ff4fd8", "secondary": "#33e1ff"},
+        "description": "A neon sun setting over an endless retro grid, with parallax mountains."
+    },
+    {
+        "name": "Deep Sea",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 0 1 16 0z"></path><path d="M8 12v6M12 12v8M16 12v6"></path></svg>',
+        "colors": {"primary": "#4ff0d2", "secondary": "#6a8bff"},
+        "description": "Bioluminescent jellyfish drift in the dark. Your pointer is the lantern."
+    },
+    {
+        "name": "Ink",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.5c3.5 4.5 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 2.5-6.5 6-11z"></path></svg>',
+        "colors": {"primary": "#b3261e", "secondary": "#2b2a33"},
+        "description": "The one light design: sumi-e ink blooms on paper around a brush-drawn circle."
+    },
+    {
+        "name": "Kaleidoscope",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"></path><path d="M12 2v20M3.34 7l17.32 10M20.66 7L3.34 17"></path></svg>',
+        "colors": {"primary": "#ff5fa2", "secondary": "#5f8bff"},
+        "description": "Paint with light and watch it mirrored. Click to change the number of mirrors."
     }
 ]
 

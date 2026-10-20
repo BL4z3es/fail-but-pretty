@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    /* The one light-paper design: it sets its own palette whatever the visitor's colour scheme. */
+    :root {
+        --bg-primary: #f3ede1;
+        --bg-secondary: #ebe4d4;
+        --bg-tertiary: #e3dbc8;
+        --fg-primary: #1c1a19;
+        --fg-secondary: #4a443e;
+        --fg-muted: #857d70;
+        --border-color: #cdc3ae;
+        --accent-primary: #b3261e;
+        --accent-secondary: #2b2a33;
+        --glow-primary: rgba(179, 38, 30, 0.3);
+        --shadow-lg: 0 10px 30px rgba(60, 45, 20, 0.18);
+    }
+
+    .ink-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        overflow: hidden;
+        background:
+            radial-gradient(ellipse at 50% 40%, #f8f3e8 0%, #efe8d8 55%, #e0d6bf 100%);
+    }
+
+    /* Paper fibre */
+    .ink-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        opacity: 0.55;
+        mix-blend-mode: multiply;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.38  0 0 0 0 0.25  0 0 0 0.35 0'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>");
+    }
+
+    .ink-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        mix-blend-mode: multiply;
+    }
+
+    .ink-enso {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        z-index: var(--z-bg);
+        width: min(88vh, 94vw);
+        height: min(88vh, 94vw);
+        transform: translate(-50%, -50%) rotate(-24deg);
+        pointer-events: none;
+        overflow: visible;
+    }
+
+    .ink-enso path {
+        fill: none;
+        stroke: #14120f;
+        stroke-linecap: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+        opacity: 0.88;
+        animation: inkStroke 2.6s cubic-bezier(0.6, 0.05, 0.25, 1) 0.3s forwards;
+    }
+
+    @keyframes inkStroke { to { stroke-dashoffset: 0; } }
+
+    .ink-seal {
+        display: inline-grid;
+        place-items: center;
+        width: 58px;
+        height: 58px;
+        margin-bottom: var(--space-lg);
+        background: var(--accent-primary);
+        color: #f6e9dc;
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: 0.04em;
+        border-radius: 5px;
+        transform: rotate(-5deg);
+        box-shadow: inset 0 0 0 3px #b3261e, inset 0 0 0 5px #f6e9dc, 0 3px 10px rgba(179, 38, 30, 0.25);
+        filter: url(#inkRough);
+        opacity: 0;
+        animation: inkStamp 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 2.4s forwards;
+    }
+
+    @keyframes inkStamp {
+        from { opacity: 0; transform: rotate(-5deg) scale(1.9); }
+        to { opacity: 0.92; transform: rotate(-5deg) scale(1); }
+    }
+
+    .ink-hint {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--fg-muted);
+        opacity: 0;
+        animation: inkHint 1s ease 3s forwards;
+        pointer-events: none;
+        z-index: var(--z-badge);
+        text-align: center;
+    }
+
+    @keyframes inkHint { to { opacity: 0.85; } }
+
+    .error-container { pointer-events: none; }
+    .error-container a { pointer-events: auto; }
+
+    .error-title {
+        font-weight: 300;
+        letter-spacing: -0.02em;
+        background: none;
+        -webkit-text-fill-color: var(--fg-primary);
+        color: var(--fg-primary);
+    }
+
+    .error-message { color: var(--fg-secondary); }
+
+    .error-detail { background: rgba(243, 237, 225, 0.7); }
+
+    .btn-primary {
+        background: var(--fg-primary);
+        color: var(--bg-primary);
+        box-shadow: 0 4px 16px rgba(28, 26, 25, 0.25);
+    }
+    .btn-primary:hover { background: var(--accent-primary); box-shadow: 0 8px 24px var(--glow-primary); }
+
+    .go-back-btn, .error-badge {
+        background: rgba(243, 237, 225, 0.88);
+    }
+
+    @media (max-width: 768px) {
+        .ink-hint { bottom: 84px; }
+        .ink-enso { width: 98vw; height: 98vw; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="ink-bg" role="img" aria-label="Ink blooming on paper beneath a brush-drawn circle">
+    <canvas class="ink-canvas" id="inkCanvas" aria-hidden="true"></canvas>
+</div>
+<svg class="ink-enso" viewBox="0 0 200 200" aria-hidden="true">
+    <path pathLength="1" stroke-width="7" d="M100 14 C150 12 188 52 186 102 C184 154 140 190 92 186 C48 182 16 146 16 102 C16 70 34 42 60 28"/>
+    <path pathLength="1" stroke-width="3" style="opacity: 0.35; animation-delay: 0.45s" d="M102 20 C148 20 182 56 180 102 C178 148 138 182 94 180 C54 176 24 144 24 102 C24 74 38 50 62 36"/>
+</svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="inkRough"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="2.4"/></filter>
+</svg>
+<div class="ink-hint" aria-hidden="true">Touch the paper &bull; Ink wants to spread</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="ink-seal" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><circle cx="15" cy="15" r="10"/><path d="M8 22L22 8"/></svg>
+    </div>
+    <h1 class="error-title animate-slide-up">
+        {{ error_code }}
+        <br>
+        <span style="font-size: 0.5em; font-weight: 400;">{{ error_name }}</span>
+    </h1>
+    <p class="error-message animate-slide-up delay-1">
+        An empty page is not a mistake.<br>Sometimes it is the whole point.
+    </p>
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-2">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Return
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var canvas = document.getElementById('inkCanvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var W = 0, H = 0, dpr = 1;
+        var drops = [];
+        var MAX_DROPS = 70;
+        var last = null;
+        var travelled = 0;
+
+        function rand(a, b) { return a + Math.random() * (b - a); }
+        function gauss() { return (Math.random() + Math.random() + Math.random() - 1.5) / 1.5; }
+        function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+        function resize() {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        // A drop is a cluster of soft overlapping discs: dense in the middle, thin at the rim, like pigment in water
+        function addDrop(x, y, radius, alpha) {
+            var blobs = [];
+            var n = 16;
+            for (var i = 0; i < n; i++) {
+                blobs.push({ ox: gauss() * radius * 0.45, oy: gauss() * radius * 0.45, r: radius * rand(0.35, 1) });
+            }
+            drops.push({ x: x, y: y, blobs: blobs, alpha: alpha, age: 0, grow: rand(70, 140), life: rand(900, 1500) });
+            if (drops.length > MAX_DROPS) drops.shift();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            drops.forEach(function (d) {
+                var g = easeOut(Math.min(1, d.age / d.grow));
+                var fade = d.age < d.life * 0.55 ? 1 : Math.max(0, 1 - (d.age - d.life * 0.55) / (d.life * 0.45));
+                var a = d.alpha * fade;
+                if (a <= 0.002) return;
+                for (var i = 0; i < d.blobs.length; i++) {
+                    var b = d.blobs[i];
+                    ctx.fillStyle = 'rgba(22, 20, 26, ' + a + ')';
+                    ctx.beginPath();
+                    ctx.arc(d.x + b.ox * g, d.y + b.oy * g, Math.max(0.5, b.r * g), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function frame() {
+            drops.forEach(function (d) { d.age += 1; });
+            drops = drops.filter(function (d) { return d.age < d.life; });
+            draw();
+            requestAnimationFrame(frame);
+        }
+
+        function ambient() {
+            addDrop(rand(0.05, 0.95) * W, rand(0.08, 0.92) * H, rand(26, 90), 0.032);
+            setTimeout(ambient, rand(1400, 2800));
+        }
+
+        resize();
+        window.addEventListener('resize', function () { resize(); draw(); });
+
+        if (reduced) {
+            // A still composition, no animation
+            for (var i = 0; i < 9; i++) {
+                addDrop(rand(0.08, 0.92) * W, rand(0.1, 0.9) * H, rand(30, 90), 0.032);
+                drops[drops.length - 1].age = 400;
+            }
+            draw();
+            return;
+        }
+
+        window.addEventListener('pointermove', function (e) {
+            if (last) travelled += Math.hypot(e.clientX - last.x, e.clientY - last.y);
+            last = { x: e.clientX, y: e.clientY };
+            if (travelled > 38) {
+                travelled = 0;
+                addDrop(e.clientX, e.clientY, rand(8, 20), 0.05);
+            }
+        });
+
+        window.addEventListener('pointerdown', function (e) {
+            if (e.target.closest && e.target.closest('a')) return;
+            addDrop(e.clientX, e.clientY, rand(70, 130), 0.05);
+            for (var i = 0; i < 4; i++) {
+                addDrop(e.clientX + rand(-70, 70), e.clientY + rand(-70, 70), rand(8, 26), 0.06);
+            }
+        });
+
+        for (var s = 0; s < 3; s++) setTimeout(function () {
+            addDrop(rand(0.1, 0.9) * W, rand(0.1, 0.9) * H, rand(40, 100), 0.034);
+        }, 200 + s * 500);
+        setTimeout(ambient, 1500);
+        frame();
+    })();
+</script>
+{% endblock %}
