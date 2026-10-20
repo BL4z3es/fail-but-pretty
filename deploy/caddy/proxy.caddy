@@ -1,0 +1,43 @@
+# fail-but-pretty's error pages for an application behind Caddy. Imported
+# *inside* a reverse_proxy block of another site:
+#
+#     reverse_proxy 127.0.0.1:8001 {
+#         import /etc/caddy/fail-but-pretty/proxy*.caddy
+#     }
+#
+# The glob is the point: while this file is not installed it matches nothing,
+# and the site keeps its own error pages instead of failing to load.
+# deploy/install.sh installs it as /etc/caddy/fail-but-pretty/proxy.caddy.
+#
+# Replaced: an HTML error page the application sent in answer to a browser
+# loading a page (GET or HEAD, Accept naming text/html). Everything else is
+# passed through as it came, headers and all: JSON errors to API clients and
+# fetch() calls, a form re-rendered with a 400 after a POST, assets. 401 is
+# never replaced, since that would drop WWW-Authenticate.
+@fbp_error {
+	status 400 403 404 405 408 410 413 414 429 500 502 503 504
+	header Content-Type text/html*
+}
+handle_response @fbp_error {
+	@fbp_page {
+		method GET HEAD
+		header Accept *text/html*
+	}
+	handle @fbp_page {
+		rewrite * /render/{rp.status_code}
+		reverse_proxy 127.0.0.1:8030 {
+			# The visitor's cookies and credentials are for the site they
+			# are on, never for this one.
+			header_up -Cookie
+			header_up -Authorization
+			header_down -Set-Cookie
+		}
+	}
+	# Anything else goes out as the application sent it. Inside
+	# handle_response the backend's headers are already on the response, so
+	# only the body needs copying; copy_response_headers here would send each
+	# header twice, Content-Length included.
+	handle {
+		copy_response
+	}
+}

@@ -1,0 +1,29 @@
+# fail-but-pretty's error pages for the errors Caddy itself raises on another
+# site: the application not answering (502 while it restarts), a file_server
+# miss. Imported at the top level of that site's block:
+#
+#     example.com {
+#         import /etc/caddy/fail-but-pretty/site*.caddy
+#         ...
+#     }
+#
+# A glob, so a missing file is a no-op. deploy/install.sh installs it as
+# /etc/caddy/fail-but-pretty/site.caddy. Only a browser loading a page gets
+# one; any other request keeps Caddy's bare status, as before. If
+# fail-but-pretty is down too, so is this page, and Caddy answers with the
+# bare status.
+handle_errors {
+	@fbp_page {
+		method GET HEAD
+		header Accept *text/html*
+		expression `{err.status_code} >= 400`
+	}
+	handle @fbp_page {
+		rewrite * /render/{err.status_code}
+		reverse_proxy 127.0.0.1:8030 {
+			header_up -Cookie
+			header_up -Authorization
+			header_down -Set-Cookie
+		}
+	}
+}

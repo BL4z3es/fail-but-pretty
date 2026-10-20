@@ -14,6 +14,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 import random
 import os
+from http import HTTPStatus
+from pathlib import Path
 
 # Create FastAPI app
 app = FastAPI(
@@ -105,7 +107,8 @@ class PageHistoryMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Only track GET requests that aren't static files or error pages
-        if request.method == "GET" and not request.url.path.startswith("/static") and not request.url.path.startswith("/error"):
+        path = request.url.path
+        if request.method == "GET" and not path.startswith(("/static", "/error", "/render")):
             update_page_history(request, request.url)
 
         response = await call_next(request)
@@ -190,6 +193,66 @@ async def trigger_error(error_code: int):
     if error_code in ERROR_CODES:
         raise HTTPException(status_code=error_code, detail=f"This is a demo {ERROR_CODES[error_code]} error")
     raise HTTPException(status_code=404, detail=f"Error code {error_code} not found")
+
+
+# Error pages for the other sites on this server. Caddy proxies a browser's
+# failed page load here (see deploy/caddy/) and serves the answer under the
+# failing site's own name, so this page cannot point at /static/: that path
+# belongs to the site it is shown on. Its stylesheet and script go inline
+# instead. Caddy drops the visitor's cookies on the way in and any Set-Cookie
+# on the way out, and the history middleware above skips this path, so a
+# visitor on another site never carries this app's session.
+BASE_DIR = Path(__file__).resolve().parent
+INLINE_CSS = (BASE_DIR / "static/css/main.css").read_text()
+INLINE_JS = (BASE_DIR / "static/js/main.js").read_text()
+
+RENDER_DETAILS = {
+    400: "The request could not be understood.",
+    401: "You need to sign in to see this page.",
+    403: "You do not have access to this page.",
+    404: "There is nothing at this address.",
+    405: "This page does not accept that kind of request.",
+    408: "The request took too long.",
+    410: "This page is gone for good.",
+    429: "Too many requests. Wait a moment and try again.",
+    500: "Something broke on our side.",
+    502: "The service behind this page is not answering. It may be restarting.",
+    503: "The service is unavailable right now. Try again shortly.",
+    504: "The service took too long to answer.",
+}
+
+
+# HEAD too: Caddy forwards a HEAD for a page as it came, and @app.get alone answers it 405.
+@app.api_route("/render/{error_code}", methods=["GET", "HEAD"])
+async def render_error(error_code: int, request: Request):
+    """Render an error page for another site, at that site's status code."""
+    if not 400 <= error_code <= 599:
+        error_code = 500
+    try:
+        phrase = HTTPStatus(error_code).phrase
+    except ValueError:
+        phrase = "Client Error" if error_code < 500 else "Server Error"
+    error_name = ERROR_CODES.get(error_code, phrase)
+    detail = RENDER_DETAILS.get(error_code, "Something went wrong with this request.")
+    template = get_random_error_template()
+
+    response = templates.TemplateResponse(
+        template,
+        {
+            "request": request,
+            "error_code": error_code,
+            "error_name": error_name,
+            "error_detail": detail,
+            # The page linking here, on the failing site; that site's home otherwise.
+            "previous_url": request.headers.get("referer") or "/",
+            "template_name": template,
+            "inline_css": INLINE_CSS,
+            "inline_js": INLINE_JS,
+        },
+        status_code=error_code,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 # Template metadata for demo page

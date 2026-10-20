@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
+    {% if inline_css %}<style>{{ inline_css | safe }}</style>{% else %}<link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">{% endif %}
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -29,7 +29,7 @@
     </div>
 
     {% block scripts %}{% endblock %}
-    <script src="{{ url_for('static', path='js/main.js') }}"></script>
+    {% if inline_js %}<script>{{ inline_js | safe }}</script>{% else %}<script src="{{ url_for('static', path='js/main.js') }}"></script>{% endif %}
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

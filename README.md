@@ -107,6 +107,36 @@ fail-but-pretty/
 | `/health` | Health check (returns JSON) |
 | `/error/{code}` | Trigger a specific HTTP error (400, 401, 403, 404, 405, 408, 418, 422, 429, 500, 502, 503, 504) |
 | `/preview/{template}?error_code=404` | Preview a specific error template |
+| `/render/{code}` | The error page Caddy serves for other sites, at that status |
+
+## Error pages for the other sites on the server
+
+On the Nebula VPS every site's browser-facing error pages come from here.
+`deploy/caddy/` holds two Caddy snippets that `deploy/install.sh` installs into
+`/etc/caddy/fail-but-pretty/`, validated with every site that imports them:
+
+- `site.caddy`, imported at the top of a site block, covers errors Caddy
+  raises itself: a 502 while the application restarts, a `file_server` miss.
+- `proxy.caddy`, imported inside a `reverse_proxy` block, replaces an HTML
+  error page the application sent.
+
+```caddy
+example.com {
+	import /etc/caddy/fail-but-pretty/site*.caddy
+	reverse_proxy 127.0.0.1:8001 {
+		import /etc/caddy/fail-but-pretty/proxy*.caddy
+	}
+}
+```
+
+The imports are globs, so a site keeps its own error pages wherever the
+snippets are not installed. Only a browser loading a page (GET or HEAD,
+`Accept: text/html`) gets one; API clients, fetch calls, POSTed forms and
+assets get the application's response unchanged, and a 401 is never replaced.
+Caddy rewrites the request to `/render/{code}`, which answers with that status,
+inlines its stylesheet and script (the failing site owns `/static/`), and links
+"Go Back" to the Referer. Cookies are stripped both ways. If this service is
+down, those page loads get a bare 502 from Caddy.
 
 ## Configuration
 
