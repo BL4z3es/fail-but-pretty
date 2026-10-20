@@ -267,14 +267,15 @@
         }
 
         // Mouse interaction
-        canvas.addEventListener('mousemove', (e) => {
+        window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             if (Math.random() < 0.1) {
                 createRipple(e.clientX - rect.left, e.clientY - rect.top);
             }
         });
 
-        canvas.addEventListener('click', (e) => {
+        window.addEventListener('click', (e) => {
+            if (e.target.closest && e.target.closest('a')) return;
             const rect = canvas.getBoundingClientRect();
             for (let i = 0; i < 3; i++) {
                 setTimeout(() => {

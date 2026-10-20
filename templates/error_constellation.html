@@ -2,6 +2,17 @@
 
 {% block head %}
 <style>
+    /* Dark by design: keep this palette whatever the visitor's colour scheme. */
+    :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #12121a;
+        --bg-tertiary: #1a1a24;
+        --fg-primary: #f0f0f5;
+        --fg-secondary: #a0a0b0;
+        --fg-muted: #606070;
+        --border-color: #2a2a3a;
+    }
+
     .constellation-bg {
         position: fixed;
         inset: 0;
@@ -273,13 +284,15 @@
         }
 
         // Events
-        canvas.addEventListener('click', (e) => {
+        window.addEventListener('click', (e) => {
+            if (e.target.closest && e.target.closest('a')) return;
             const rect = canvas.getBoundingClientRect();
             addStar(e.clientX - rect.left, e.clientY - rect.top);
             if (hint) hint.style.opacity = '0.6';
         });
 
-        canvas.addEventListener('touchstart', (e) => {
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.closest && e.target.closest('a')) return;
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             const touch = e.touches[0];

@@ -190,7 +190,7 @@
                         p.size = p.baseSize * 1.2;
                     }
                 } else {
-                    p.size = lerp(p.size, p.baseSize, 0.1);
+                    p.size = window.fbp.lerp(p.size, p.baseSize, 0.1);
                 }
 
                 // Update position
@@ -280,29 +280,31 @@
         }
 
         // Mouse events
-        canvas.addEventListener('mousemove', (e) => {
+        window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.clientX - rect.left;
             mouse.y = e.clientY - rect.top;
             if (hint) hint.style.opacity = '0.6';
         });
 
-        canvas.addEventListener('mouseleave', () => {
+        document.addEventListener('mouseleave', () => {
             mouse.x = -9999;
             mouse.y = -9999;
         });
 
-        canvas.addEventListener('mousedown', () => { mouse.down = true; });
-        canvas.addEventListener('mouseup', () => { mouse.down = false; });
-        canvas.addEventListener('touchstart', (e) => {
+        window.addEventListener('mousedown', (e) => { if (e.target.closest && e.target.closest('a')) return; mouse.down = true; });
+        window.addEventListener('mouseup', () => { mouse.down = false; });
+        window.addEventListener('touchstart', (e) => {
+            if (e.target.closest && e.target.closest('a')) return;
             e.preventDefault();
             mouse.down = true;
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.touches[0].clientX - rect.left;
             mouse.y = e.touches[0].clientY - rect.top;
         }, { passive: false });
-        canvas.addEventListener('touchend', () => { mouse.down = false; });
-        canvas.addEventListener('touchmove', (e) => {
+        window.addEventListener('touchend', () => { mouse.down = false; });
+        window.addEventListener('touchmove', (e) => {
+            if (e.target.closest && e.target.closest('a')) return;
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.touches[0].clientX - rect.left;
