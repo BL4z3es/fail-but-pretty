@@ -24,7 +24,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Error page templates - 15 unique designs
+# Error page templates - 20 unique designs
 ERROR_TEMPLATES = [
     "error_nebula.html",       # Cosmic nebula theme
     "error_geometric.html",    # Geometric shapes animation
@@ -41,6 +41,11 @@ ERROR_TEMPLATES = [
     "error_deepsea.html",      # Bioluminescent jellyfish in the deep
     "error_ink.html",          # Sumi-e ink blooming on paper
     "error_kaleidoscope.html", # Mirrored light you paint with the pointer
+    "error_winter.html",       # Snowfall over a pine forest and a lit cabin
+    "error_nosignal.html",     # CRT colour bars, static and channel surfing
+    "error_newspaper.html",    # Front page of a daily paper, in print
+    "error_neon.html",         # Neon sign on a brick wall
+    "error_topo.html",         # Shifting topographic contour map
 ]
 
 ERROR_CODES = {
@@ -351,6 +356,36 @@ TEMPLATE_METADATA = [
         "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"></path><path d="M12 2v20M3.34 7l17.32 10M20.66 7L3.34 17"></path></svg>',
         "colors": {"primary": "#ff5fa2", "secondary": "#5f8bff"},
         "description": "Paint with light and watch it mirrored. Click to change the number of mirrors."
+    },
+    {
+        "name": "Winter",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4.9 6l14.2 12M4.9 18L19.1 6"></path></svg>',
+        "colors": {"primary": "#8ec5ff", "secondary": "#0b1530"},
+        "description": "Snow drifts over a pine forest at night. Move to steer the wind, click for a gust."
+    },
+    {
+        "name": "No Signal",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"></rect><path d="M8 22h8M12 18v4"></path></svg>',
+        "colors": {"primary": "#35e0ff", "secondary": "#ff3d6e"},
+        "description": "CRT colour bars, scanlines and static. Click to change the channel."
+    },
+    {
+        "name": "Newspaper",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h13v16H6a2 2 0 0 1-2-2zM17 8h3v10a2 2 0 0 1-2 2M7 8h7M7 12h7M7 16h5"></path></svg>',
+        "colors": {"primary": "#1a1814", "secondary": "#8a1c14"},
+        "description": "The front page of The Daily Detour, with a misregistered headline and a CORRECTION stamp."
+    },
+    {
+        "name": "Neon",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="5"></rect><path d="M8 12h8"></path></svg>',
+        "colors": {"primary": "#ff3fa4", "secondary": "#30e6ff"},
+        "description": "A flickering neon sign on a brick wall. Click the sign to flip the breaker."
+    },
+    {
+        "name": "Topographic",
+        "icon": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c4-1 4-6 9-6s5-5 9-6M3 21c5-1 6-4 10-4s5-3 8-3"></path></svg>',
+        "colors": {"primary": "#4fd1b0", "secondary": "#e8b45f"},
+        "description": "A living contour map. Move to raise the ground, click to drop a lasting peak."
     }
 ]
 

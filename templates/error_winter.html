@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    :root {
+        --bg-primary: #0b1530;
+        --bg-secondary: #12224a;
+        --bg-tertiary: #1a2f5e;
+        --fg-primary: #f2f7ff;
+        --fg-secondary: #b9cdf0;
+        --fg-muted: #7d95c4;
+        --border-color: #2c4580;
+        --accent-primary: #ffd9a0;
+        --accent-secondary: #8ec5ff;
+        --glow-primary: rgba(255, 217, 160, 0.4);
+    }
+
+    .wt-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        overflow: hidden;
+        background: linear-gradient(180deg, #060d22 0%, #0f1f45 45%, #2b4578 85%, #4a679a 100%);
+    }
+
+    .wt-stars { position: absolute; inset: 0 0 45% 0; }
+
+    .wt-star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        border-radius: 50%;
+        background: #fff;
+        animation: wtTwinkle 4s ease-in-out infinite;
+    }
+
+    @keyframes wtTwinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.9; } }
+
+    .wt-moon {
+        position: absolute;
+        top: 9vh;
+        right: 12vw;
+        width: clamp(60px, 9vmin, 110px);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #fffdf2 0%, #f3ecd0 60%, #d9d0aa 100%);
+        box-shadow: 0 0 40px 8px rgba(255, 250, 220, 0.35), 0 0 160px 50px rgba(190, 210, 255, 0.18);
+    }
+
+    .wt-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .wt-land {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 36vh;
+    }
+
+    .wt-window {
+        animation: wtFlicker 5s ease-in-out infinite;
+    }
+
+    @keyframes wtFlicker {
+        0%, 100% { opacity: 1; }
+        42% { opacity: 0.85; }
+        47% { opacity: 1; }
+        78% { opacity: 0.9; }
+    }
+
+    .wt-hint {
+        position: fixed;
+        left: 50%;
+        bottom: 96px;
+        transform: translateX(-50%);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--fg-secondary);
+        opacity: 0;
+        animation: wtHint 1s ease 2.5s forwards;
+        pointer-events: none;
+        z-index: var(--z-badge);
+        text-align: center;
+    }
+
+    @keyframes wtHint { to { opacity: 0.65; } }
+
+    .error-container { pointer-events: none; padding-bottom: 14vh; }
+    .error-container a { pointer-events: auto; }
+
+    .error-title {
+        background: linear-gradient(180deg, #ffffff 30%, #bcd3f7 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        filter: drop-shadow(0 4px 20px rgba(10, 20, 50, 0.7));
+    }
+
+    .error-message { text-shadow: 0 2px 14px #060d22; }
+
+    @media (max-width: 768px) {
+        .wt-hint { bottom: 84px; }
+        .wt-moon { right: 8vw; top: 12vh; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="wt-bg" role="img" aria-label="Snow falling over a pine forest at night, with a lit cabin window">
+    <div class="wt-stars" id="wtStars" aria-hidden="true"></div>
+    <div class="wt-moon" aria-hidden="true"></div>
+    <canvas class="wt-canvas" id="wtCanvas" aria-hidden="true"></canvas>
+    <svg class="wt-land" viewBox="0 0 1600 360" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <defs>
+            <radialGradient id="wtGlow">
+                <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.55"/>
+                <stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="wtLamp">
+                <stop offset="0" stop-color="#fff1c9" stop-opacity="0.7"/>
+                <stop offset="1" stop-color="#fff1c9" stop-opacity="0"/>
+            </radialGradient>
+        </defs>
+        <path d="M0 220 C200 170 380 200 560 175 C760 148 900 205 1120 170 C1300 142 1460 175 1600 160 V360 H0Z" fill="#1c2e55"/>
+        <g id="wtTreesFar" fill="#14234a"></g>
+        <path d="M0 270 C260 235 420 262 700 242 C960 224 1180 262 1400 240 C1500 230 1560 236 1600 232 V360 H0Z" fill="#e9f0ff"/>
+        <path d="M0 290 C300 270 520 292 800 276 C1060 262 1300 290 1600 270 V360 H0Z" fill="#c9d8f2"/>
+        <g id="wtTreesNear" fill="#0a1329"></g>
+        <!-- cabin -->
+        <g transform="translate(1090 232)">
+            <ellipse class="wt-window" cx="38" cy="-2" rx="95" ry="70" fill="url(#wtGlow)"/>
+            <rect x="0" y="-52" width="90" height="56" fill="#0a1329"/>
+            <polygon points="-10,-52 45,-92 100,-52" fill="#0a1329"/>
+            <polygon points="-10,-52 45,-92 100,-52 100,-58 45,-98 -10,-58" fill="#eef4ff"/>
+            <rect class="wt-window" x="14" y="-38" width="22" height="22" fill="#ffd9a0"/>
+            <path d="M25 -38 V-16 M14 -27 H36" stroke="#0a1329" stroke-width="2"/>
+            <rect x="58" y="-34" width="16" height="38" fill="#1b2a52"/>
+            <rect x="64" y="-96" width="12" height="26" fill="#0a1329"/>
+        </g>
+        <!-- street lamp -->
+        <g transform="translate(430 270)">
+            <circle cx="0" cy="-92" r="90" fill="url(#wtLamp)"/>
+            <rect x="-2" y="-96" width="4" height="100" fill="#0a1329"/>
+            <rect x="-9" y="-104" width="18" height="10" rx="3" fill="#0a1329"/>
+            <circle cx="0" cy="-92" r="4" fill="#fff6dc"/>
+        </g>
+    </svg>
+</div>
+<div class="wt-hint" aria-hidden="true">Move to steer the wind &bull; Click for a gust</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1 class="error-title animate-slide-up">
+        {{ error_code }}
+        <br>
+        <span style="font-size: 0.5em; font-weight: 400;">{{ error_name }}</span>
+    </h1>
+    <p class="error-message animate-slide-up delay-1">
+        The path is buried under fresh snow.<br>The cabin light is still on, though.
+    </p>
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-2">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Head Back Inside
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var NS = 'http://www.w3.org/2000/svg';
+
+        // Pines are generated with a fixed seed so the skyline is the same on every load
+        function seeded(seed) {
+            return function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+        }
+
+        function pines(id, count, minH, maxH, baseY, seed) {
+            var g = document.getElementById(id);
+            if (!g) return;
+            var rnd = seeded(seed);
+            for (var i = 0; i < count; i++) {
+                var x = (i + rnd() * 0.8) * (1700 / count) - 50;
+                var h = minH + rnd() * (maxH - minH);
+                var w = h * 0.38;
+                var d = '';
+                var tiers = 4;
+                for (var t = 0; t < tiers; t++) {
+                    var ty = baseY - h + (t * h) / (tiers + 0.6);
+                    var tw = w * (0.45 + (t + 1) / tiers * 0.55);
+                    d += 'M' + x + ' ' + ty + ' L' + (x - tw) + ' ' + (ty + h / tiers * 1.25) + ' H' + (x + tw) + ' Z ';
+                }
+                d += 'M' + (x - 3) + ' ' + (baseY - h * 0.1) + ' h6 v' + h * 0.12 + ' h-6 Z';
+                var p = document.createElementNS(NS, 'path');
+                p.setAttribute('d', d);
+                g.appendChild(p);
+            }
+        }
+
+        pines('wtTreesFar', 34, 70, 120, 215, 7);
+        pines('wtTreesNear', 16, 150, 250, 330, 11);
+
+        var stars = document.getElementById('wtStars');
+        if (stars) {
+            for (var i = 0; i < 80; i++) {
+                var s = document.createElement('i');
+                s.className = 'wt-star';
+                s.style.left = (Math.random() * 100) + '%';
+                s.style.top = (Math.random() * 100) + '%';
+                s.style.animationDelay = (-Math.random() * 4) + 's';
+                stars.appendChild(s);
+            }
+        }
+
+        var canvas = document.getElementById('wtCanvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var W = 0, H = 0, dpr = 1;
+        var flakes = [];
+        var wind = 0, windTarget = 0, gust = 0;
+
+        function rand(a, b) { return a + Math.random() * (b - a); }
+
+        function resize() {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function makeFlake(anywhere) {
+            var depth = Math.random();   // 0 far, 1 near
+            return {
+                x: rand(-50, W + 50),
+                y: anywhere ? rand(0, H) : -10,
+                r: 0.6 + depth * 2.6,
+                vy: 0.35 + depth * 1.6,
+                depth: depth,
+                phase: rand(0, Math.PI * 2),
+                a: 0.35 + depth * 0.6
+            };
+        }
+
+        function setup() {
+            resize();
+            flakes.length = 0;
+            var n = Math.round(Math.min(420, (W * H) / 3200));
+            for (var i = 0; i < n; i++) flakes.push(makeFlake(true));
+        }
+
+        function draw(time) {
+            ctx.clearRect(0, 0, W, H);
+            wind += (windTarget - wind) * 0.03;
+            gust *= 0.97;
+            ctx.fillStyle = '#fff';
+            for (var i = 0; i < flakes.length; i++) {
+                var f = flakes[i];
+                f.phase += 0.02;
+                f.x += (Math.sin(f.phase) * 0.4 + wind * (0.4 + f.depth) + gust * f.depth * 3) ;
+                f.y += f.vy + Math.abs(gust) * 0.2;
+                if (f.y > H + 10 || f.x < -60 || f.x > W + 60) {
+                    flakes[i] = makeFlake(false);
+                    if (f.x < -60 || f.x > W + 60) flakes[i].y = rand(0, H);
+                    continue;
+                }
+                ctx.globalAlpha = f.a;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        function frame(now) {
+            draw(now);
+            requestAnimationFrame(frame);
+        }
+
+        setup();
+        window.addEventListener('resize', function () { setup(); if (reduced) draw(0); });
+
+        if (reduced) { draw(0); return; }
+
+        window.addEventListener('pointermove', function (e) {
+            windTarget = (e.clientX / W - 0.5) * 5;
+        });
+        window.addEventListener('pointerdown', function (e) {
+            if (e.target.closest && e.target.closest('a')) return;
+            gust = (e.clientX < W / 2 ? 1 : -1) * -4;
+        });
+        requestAnimationFrame(frame);
+    })();
+</script>
+{% endblock %}

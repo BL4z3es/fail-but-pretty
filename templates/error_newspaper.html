@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&display=swap" rel="stylesheet">
+<style>
+    /* A second light-paper design, in print: it pins its own palette whatever the colour scheme. */
+    :root {
+        --bg-primary: #f2ebd9;
+        --bg-secondary: #ebe3cf;
+        --bg-tertiary: #e4dbc4;
+        --fg-primary: #1a1814;
+        --fg-secondary: #3d382f;
+        --fg-muted: #7d7566;
+        --border-color: #c9bfa6;
+        --accent-primary: #1a1814;
+        --accent-secondary: #8a1c14;
+        --glow-primary: rgba(26, 24, 20, 0.25);
+        --shadow-lg: 0 10px 30px rgba(60, 45, 20, 0.16);
+        --serif: 'Playfair Display', 'Times New Roman', Georgia, serif;
+    }
+
+    .np-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: radial-gradient(ellipse at 50% 30%, #f7f1e1 0%, #efe7d2 60%, #ddd2b6 100%);
+    }
+
+    .np-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        opacity: 0.5;
+        mix-blend-mode: multiply;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.34  0 0 0 0 0.2  0 0 0 0.3 0'/></filter><rect width='300' height='300' filter='url(%23n)'/></svg>");
+    }
+
+    .error-container {
+        justify-content: flex-start;
+        padding-top: clamp(5rem, 11vh, 7rem);
+        padding-bottom: 8rem;
+        font-family: var(--serif);
+    }
+
+    .np-page {
+        width: min(960px, 100%);
+        text-align: center;
+        color: var(--fg-primary);
+        opacity: 0;
+        animation: npIn 0.9s ease 0.1s forwards;
+    }
+
+    @keyframes npIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+    .np-masthead {
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: clamp(2.2rem, 7vw, 4.4rem);
+        letter-spacing: 0.01em;
+        line-height: 1;
+    }
+
+    .np-dateline {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-md);
+        margin-top: var(--space-md);
+        padding: 0.4rem 0;
+        border-top: 3px double var(--fg-primary);
+        border-bottom: 1px solid var(--fg-primary);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+    }
+
+    .np-headline {
+        margin: var(--space-xl) 0 var(--space-sm);
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: clamp(2.6rem, 10vw, 6.4rem);
+        line-height: 0.95;
+        letter-spacing: -0.01em;
+        text-transform: uppercase;
+        /* misregistered print: a faint red plate offset behind the black one */
+        text-shadow: 3px 2px 0 rgba(138, 28, 20, 0.28);
+    }
+
+    .np-code {
+        display: inline-block;
+        margin-bottom: var(--space-sm);
+        padding: 0.1rem 0.7rem;
+        background: var(--fg-primary);
+        color: var(--bg-primary);
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: 0.85rem;
+        letter-spacing: 0.25em;
+    }
+
+    .np-sub {
+        font-style: italic;
+        font-size: clamp(1.05rem, 2.6vw, 1.5rem);
+        color: var(--fg-secondary);
+        margin-bottom: var(--space-lg);
+    }
+
+    .np-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0;
+        border-top: 1px solid var(--fg-primary);
+        padding-top: var(--space-lg);
+        text-align: left;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 0.95rem;
+        line-height: 1.55;
+        color: var(--fg-secondary);
+    }
+
+    .np-body > * { padding: 0 var(--space-lg); }
+    .np-body > * + * { border-left: 1px solid var(--border-color); }
+    .np-body > p::first-letter {
+        float: left;
+        font-family: var(--serif);
+        font-weight: 900;
+        font-size: 3.2rem;
+        line-height: 0.85;
+        padding: 0.2rem 0.4rem 0 0;
+        color: var(--fg-primary);
+    }
+
+    .np-box {
+        border: 2px solid var(--fg-primary);
+        padding: var(--space-md);
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--fg-primary);
+        align-self: start;
+    }
+
+    .np-box b { display: block; font-family: var(--serif); font-size: 1rem; margin-bottom: 0.4rem; text-transform: uppercase; }
+
+    .np-halftone {
+        height: 120px;
+        margin-bottom: var(--space-md);
+        background-color: var(--fg-primary);
+        -webkit-mask-image: radial-gradient(circle at 50% 55%, #000 0, transparent 70%), radial-gradient(circle, #000 35%, transparent 38%);
+        -webkit-mask-size: 100% 100%, 8px 8px;
+        -webkit-mask-composite: source-in;
+        mask-image: radial-gradient(circle at 50% 55%, #000 0, transparent 70%), radial-gradient(circle, #000 35%, transparent 38%);
+        mask-size: 100% 100%, 8px 8px;
+        mask-composite: intersect;
+    }
+
+    .np-stamp {
+        position: absolute;
+        top: 22%;
+        right: 4%;
+        padding: 0.3rem 1rem;
+        border: 4px solid var(--accent-secondary);
+        color: var(--accent-secondary);
+        font-family: var(--font-mono);
+        font-weight: 700;
+        font-size: clamp(1rem, 3vw, 1.6rem);
+        letter-spacing: 0.2em;
+        transform: rotate(-9deg);
+        opacity: 0;
+        animation: npStamp 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) 1.4s forwards;
+        mix-blend-mode: multiply;
+        pointer-events: none;
+    }
+
+    @keyframes npStamp {
+        from { opacity: 0; transform: rotate(-9deg) scale(2.2); }
+        to { opacity: 0.85; transform: rotate(-9deg) scale(1); }
+    }
+
+    .np-actions { margin-top: var(--space-xl); }
+
+    .btn-primary { background: var(--fg-primary); color: var(--bg-primary); border-radius: 0; box-shadow: 4px 4px 0 var(--accent-secondary); }
+    .btn-primary:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--accent-secondary); }
+
+    .go-back-btn, .error-badge { background: rgba(242, 235, 217, 0.92); }
+
+    @media (max-width: 768px) {
+        .np-body { grid-template-columns: 1fr; }
+        .np-body > * { padding: var(--space-md) 0; }
+        .np-body > * + * { border-left: 0; border-top: 1px solid var(--border-color); }
+        .np-dateline span:nth-child(2) { display: none; }
+        .np-stamp { top: 30%; right: 0; }
+        .error-container { padding-top: 6rem; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="np-bg" role="presentation"></div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <article class="np-page">
+        <div class="np-masthead">The Daily Detour</div>
+        <div class="np-dateline">
+            <span id="npDate">Late Edition</span>
+            <span>&ldquo;All the news that fits the URL&rdquo;</span>
+            <span>No. {{ error_code }}</span>
+        </div>
+
+        <div class="np-stamp" aria-hidden="true">CORRECTION</div>
+
+        <span class="np-code">STATUS {{ error_code }}</span>
+        <h1 class="np-headline">{{ error_name }}</h1>
+        <p class="np-sub">Missing page last seen leaving the server; officials urge calm</p>
+
+        <div class="np-body">
+            <p>
+                Authorities confirmed this morning that the page you requested could not be located after an
+                exhaustive search of every directory on the premises. Witnesses reported nothing unusual.
+            </p>
+            <div>
+                <div class="np-halftone" aria-hidden="true"></div>
+                <p style="font-style: italic; font-size: 0.8rem;">The scene of the disappearance. Nothing was here before, either.</p>
+            </div>
+            <aside class="np-box">
+                <b>From the wire</b>
+                {% if error_detail %}{{ error_detail }}{% else %}No further details were available at press time.{% endif %}
+            </aside>
+        </div>
+
+        <div class="np-actions">
+            <a href="{{ previous_url }}" class="btn btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Continue on previous page
+            </a>
+        </div>
+    </article>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var el = document.getElementById('npDate');
+        if (!el) return;
+        try {
+            el.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        } catch (e) { /* keep the static text */ }
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    :root {
+        --bg-primary: #0f1a17;
+        --bg-secondary: #14231f;
+        --bg-tertiary: #1a2e29;
+        --fg-primary: #f3ecd8;
+        --fg-secondary: #c2c7b0;
+        --fg-muted: #7f8c7e;
+        --border-color: #2f4a43;
+        --accent-primary: #e8b45f;
+        --accent-secondary: #4fd1b0;
+        --glow-primary: rgba(232, 180, 95, 0.35);
+    }
+
+    .tp-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        background: radial-gradient(ellipse at 50% 40%, #16261f 0%, #0f1a17 70%);
+        overflow: hidden;
+    }
+
+    .tp-canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .tp-scrim {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        z-index: var(--z-bg);
+        width: min(760px, 120vw);
+        height: min(560px, 92vh);
+        transform: translate(-50%, -50%);
+        background: radial-gradient(closest-side, rgba(15, 26, 23, 0.8) 30%, rgba(15, 26, 23, 0.35) 75%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .tp-readout {
+        position: fixed;
+        left: var(--space-xl);
+        bottom: var(--space-xl);
+        z-index: var(--z-badge);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent-primary);
+        background: rgba(15, 26, 23, 0.85);
+        border: 1px solid var(--border-color);
+        padding: var(--space-sm) var(--space-md);
+        line-height: 1.6;
+    }
+
+    .tp-hint {
+        position: fixed;
+        left: 50%;
+        bottom: 96px;
+        transform: translateX(-50%);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--fg-secondary);
+        opacity: 0;
+        animation: tpHint 1s ease 2s forwards;
+        pointer-events: none;
+        z-index: var(--z-badge);
+        text-align: center;
+    }
+
+    @keyframes tpHint { to { opacity: 0.6; } }
+
+    .error-container { pointer-events: none; }
+    .error-container a { pointer-events: auto; }
+
+    .error-title {
+        background: linear-gradient(180deg, #fff6df, var(--accent-primary));
+        -webkit-background-clip: text;
+        background-clip: text;
+    }
+
+    .error-message { text-shadow: 0 2px 12px #0f1a17; }
+
+    @media (max-width: 768px), (pointer: coarse) {
+        .tp-readout { display: none; }
+        .tp-hint { bottom: 84px; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="tp-bg" role="img" aria-label="A shifting topographic map of contour lines">
+    <canvas class="tp-canvas" id="tpCanvas" aria-hidden="true"></canvas>
+</div>
+<div class="tp-scrim" aria-hidden="true"></div>
+<div class="tp-readout" id="tpReadout" aria-hidden="true">E 0000 &nbsp; N 0000<br>Elev &mdash; m</div>
+<div class="tp-hint" aria-hidden="true">Move to raise the ground &bull; Click to drop a lasting peak</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1 class="error-title animate-slide-up">
+        {{ error_code }}
+        <br>
+        <span style="font-size: 0.5em; font-weight: 400;">{{ error_name }}</span>
+    </h1>
+    <p class="error-message animate-slide-up delay-1">
+        You've walked off the edge of the map.<br>The land here has not been surveyed.
+    </p>
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-2">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Retrace Your Steps
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var canvas = document.getElementById('tpCanvas');
+        var readout = document.getElementById('tpReadout');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var W = 0, H = 0, dpr = 1;
+        var STEP = 16;
+        var cols = 0, rows = 0, field = null;
+        var LEVELS = 26;
+        var t = 0;
+        var mouse = { x: -9999, y: -9999, on: false };
+        var peaks = [];   // lasting bumps dropped by clicks: { x, y, h, life }
+
+        function resize() {
+            dpr = Math.min(window.devicePixelRatio || 1, 2);
+            W = window.innerWidth;
+            H = window.innerHeight;
+            STEP = W < 600 ? 14 : 16;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            cols = Math.ceil(W / STEP) + 1;
+            rows = Math.ceil(H / STEP) + 1;
+            field = new Float32Array(cols * rows);
+        }
+
+        // Elevation 0..1: a few drifting waves, plus bumps from the pointer and from clicks
+        function sample(x, y, tt) {
+            var u = x / 250, v = y / 250;
+            var e = Math.sin(u * 1.1 + tt * 0.5) + Math.sin(v * 1.3 - tt * 0.4)
+                  + Math.sin((u + v) * 0.8 + tt * 0.3) + Math.sin(Math.hypot(u - 2.4, v - 1.6) * 1.9 - tt * 0.55)
+                  + 0.5 * Math.sin(u * 2.7 - v * 2.1 + tt * 0.7);
+            return e / 4.5 * 0.5 + 0.5;
+        }
+
+        function build(tt) {
+            for (var j = 0; j < rows; j++) {
+                for (var i = 0; i < cols; i++) {
+                    var x = i * STEP, y = j * STEP;
+                    var e = sample(x, y, tt);
+                    if (mouse.on) {
+                        var dx = x - mouse.x, dy = y - mouse.y;
+                        e += 0.38 * Math.exp(-(dx * dx + dy * dy) / 26000);
+                    }
+                    for (var p = 0; p < peaks.length; p++) {
+                        var pk = peaks[p];
+                        var px = x - pk.x, py = y - pk.y;
+                        e += pk.h * pk.life * Math.exp(-(px * px + py * py) / 30000);
+                    }
+                    field[j * cols + i] = e;
+                }
+            }
+        }
+
+        // Marching squares. Corner order: tl=8, tr=4, br=2, bl=1.
+        // Edges: a=top, b=right, c=bottom, d=left.
+        var SEGS = [[], ['d', 'c'], ['c', 'b'], ['d', 'b'], ['a', 'b'], ['a', 'd', 'c', 'b'], ['a', 'c'], ['a', 'd'],
+                    ['a', 'd'], ['a', 'c'], ['a', 'b', 'd', 'c'], ['a', 'b'], ['d', 'b'], ['c', 'b'], ['d', 'c'], []];
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            for (var l = 0; l < LEVELS; l++) {
+                var L = 0.08 + (l + 0.5) / LEVELS * 0.92;   // spans the range the field reaches, bumps included
+                var index = l % 5 === 0;
+                var hue = 165 - (l / LEVELS) * 130;       // teal low ground to amber peaks
+                ctx.strokeStyle = 'hsla(' + hue + ',62%,' + (index ? 66 : 58) + '%,' + (index ? 0.95 : 0.5) + ')';
+                ctx.lineWidth = index ? 1.7 : 0.9;
+                ctx.beginPath();
+
+                for (var j = 0; j < rows - 1; j++) {
+                    for (var i = 0; i < cols - 1; i++) {
+                        var tl = field[j * cols + i], tr = field[j * cols + i + 1];
+                        var bl = field[(j + 1) * cols + i], br = field[(j + 1) * cols + i + 1];
+                        var c = (tl > L ? 8 : 0) | (tr > L ? 4 : 0) | (br > L ? 2 : 0) | (bl > L ? 1 : 0);
+                        if (c === 0 || c === 15) continue;
+                        var x0 = i * STEP, y0 = j * STEP;
+                        var pt = {
+                            a: [x0 + (L - tl) / (tr - tl) * STEP, y0],
+                            b: [x0 + STEP, y0 + (L - tr) / (br - tr) * STEP],
+                            c: [x0 + (L - bl) / (br - bl) * STEP, y0 + STEP],
+                            d: [x0, y0 + (L - tl) / (bl - tl) * STEP]
+                        };
+                        var s = SEGS[c];
+                        for (var k = 0; k < s.length; k += 2) {
+                            var p = pt[s[k]], q = pt[s[k + 1]];
+                            ctx.moveTo(p[0], p[1]);
+                            ctx.lineTo(q[0], q[1]);
+                        }
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+
+        function updateReadout() {
+            if (!readout || !mouse.on) return;
+            var e = sample(mouse.x, mouse.y, t) + 0.38;
+            var metres = Math.round(200 + e * 1400);
+            readout.innerHTML = 'E ' + String(Math.round(mouse.x)).padStart(4, '0') + ' &nbsp; N ' + String(Math.round(mouse.y)).padStart(4, '0') + '<br>Elev ' + metres.toLocaleString('en-US') + ' m';
+        }
+
+        var last = 0;
+        function frame(now) {
+            if (now - last > 32) {     // ~30 fps: contour lines don't need more
+                last = now;
+                t += 0.016;
+                for (var p = peaks.length - 1; p >= 0; p--) {
+                    peaks[p].life -= 0.0035;
+                    if (peaks[p].life <= 0) peaks.splice(p, 1);
+                }
+                build(t);
+                draw();
+                updateReadout();
+            }
+            requestAnimationFrame(frame);
+        }
+
+        resize();
+        window.addEventListener('resize', function () { resize(); if (reduced) { build(t); draw(); } });
+
+        if (reduced) { t = 1.3; build(t); draw(); return; }
+
+        window.addEventListener('pointermove', function (e) {
+            mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
+        });
+        document.addEventListener('pointerleave', function () { mouse.on = false; });
+        window.addEventListener('pointerdown', function (e) {
+            if (e.target.closest && e.target.closest('a')) return;
+            peaks.push({ x: e.clientX, y: e.clientY, h: 0.55, life: 1 });
+            if (peaks.length > 8) peaks.shift();
+        });
+
+        requestAnimationFrame(frame);
+    })();
+</script>
+{% endblock %}

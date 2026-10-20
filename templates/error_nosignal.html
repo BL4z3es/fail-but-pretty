@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    :root {
+        --bg-primary: #050505;
+        --bg-secondary: #0d0d0d;
+        --bg-tertiary: #161616;
+        --fg-primary: #ffffff;
+        --fg-secondary: #d0d0d0;
+        --fg-muted: #8a8a8a;
+        --border-color: #3a3a3a;
+        --accent-primary: #35e0ff;
+        --accent-secondary: #ff3d6e;
+        --glow-primary: rgba(53, 224, 255, 0.4);
+    }
+
+    .ns-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        overflow: hidden;
+        background: #000;
+    }
+
+    .ns-screen {
+        position: absolute;
+        inset: 0;
+        filter: saturate(0.85) brightness(0.9) hue-rotate(var(--hue, 0deg));
+        transition: filter 0.3s ease;
+    }
+
+    /* SMPTE colour bars: 7 bars, a reverse strip, then the PLUGE row */
+    .ns-bars {
+        position: absolute;
+        left: 0; right: 0; top: 0;
+        height: 67%;
+        background: linear-gradient(90deg,
+            #c0c0c0 0 14.28%, #c0c000 14.28% 28.57%, #00c0c0 28.57% 42.85%, #00c000 42.85% 57.14%,
+            #c000c0 57.14% 71.42%, #c00000 71.42% 85.71%, #0000c0 85.71% 100%);
+    }
+
+    .ns-strip {
+        position: absolute;
+        left: 0; right: 0; top: 67%;
+        height: 8%;
+        background: linear-gradient(90deg,
+            #0000c0 0 14.28%, #131313 14.28% 28.57%, #c000c0 28.57% 42.85%, #131313 42.85% 57.14%,
+            #00c0c0 57.14% 71.42%, #131313 71.42% 85.71%, #c0c0c0 85.71% 100%);
+    }
+
+    .ns-pluge {
+        position: absolute;
+        left: 0; right: 0; top: 75%; bottom: 0;
+        background: linear-gradient(90deg,
+            #00214c 0 17.8%, #ffffff 17.8% 35.7%, #32006a 35.7% 53.5%, #131313 53.5% 71.4%,
+            #090909 71.4% 78.5%, #131313 78.5% 85.7%, #1d1d1d 85.7% 100%);
+    }
+
+    .ns-noise {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        image-rendering: pixelated;
+        opacity: 0.16;
+        mix-blend-mode: screen;
+    }
+
+    .ns-bg.ns-static .ns-noise { opacity: 0.95; }
+    .ns-bg.ns-static .ns-screen { filter: brightness(0.3); }
+
+    .ns-scan {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
+    }
+
+    .ns-roll {
+        position: absolute;
+        left: 0; right: 0;
+        height: 22%;
+        top: -25%;
+        pointer-events: none;
+        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+        animation: nsRoll 7s linear infinite;
+    }
+
+    @keyframes nsRoll { to { top: 110%; } }
+
+    /* The curve of the glass */
+    .ns-glass {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.7) 100%);
+        box-shadow: inset 0 0 120px 30px rgba(0, 0, 0, 0.85);
+    }
+
+    .ns-osd {
+        position: relative;
+        padding: var(--space-xl) var(--space-2xl);
+        background: rgba(0, 0, 0, 0.82);
+        border: 3px solid #fff;
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.6);
+        max-width: min(640px, 100%);
+        font-family: var(--font-mono);
+        text-shadow: 2px 0 rgba(255, 0, 80, 0.7), -2px 0 rgba(0, 220, 255, 0.7);
+        animation: nsJitter 6s steps(1) infinite;
+    }
+
+    @keyframes nsJitter {
+        0%, 92%, 100% { transform: translate(0, 0); }
+        93% { transform: translate(3px, -1px); }
+        95% { transform: translate(-4px, 1px); }
+        97% { transform: translate(2px, 0); }
+    }
+
+    .ns-channel {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        color: #66ff88;
+        margin-bottom: var(--space-md);
+    }
+
+    .ns-signal {
+        font-size: clamp(1.5rem, 5vw, 2.4rem);
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        color: #fff;
+        animation: nsBlink 1.4s steps(1) infinite;
+    }
+
+    @keyframes nsBlink { 50% { opacity: 0.15; } }
+
+    .ns-osd .error-title {
+        font-family: var(--font-mono);
+        font-size: clamp(3rem, 12vw, 6rem);
+        background: none;
+        -webkit-text-fill-color: #fff;
+        color: #fff;
+        margin: var(--space-sm) 0;
+    }
+
+    .ns-osd .error-message { margin: 0 auto var(--space-lg); font-size: 0.95rem; color: #e8e8e8; }
+    .ns-osd .error-detail { margin-left: auto; margin-right: auto; background: #111; border-color: #555; }
+
+    .ns-hint {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: #fff;
+        text-shadow: 0 0 6px #000, 0 0 2px #000;
+        opacity: 0.7;
+        pointer-events: none;
+        z-index: var(--z-badge);
+        text-align: center;
+    }
+
+    .error-container { pointer-events: none; }
+    .error-container a { pointer-events: auto; }
+
+    .btn-primary { background: #fff; color: #000; box-shadow: 4px 4px 0 var(--accent-secondary); border-radius: 0; }
+    .btn-primary:hover { box-shadow: 6px 6px 0 var(--accent-primary); }
+
+    @media (max-width: 768px) {
+        .ns-osd { padding: var(--space-lg) var(--space-lg); }
+        .ns-hint { bottom: 84px; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="ns-bg" id="nsBg" role="img" aria-label="A television showing colour bars and no signal">
+    <div class="ns-screen" id="nsScreen" aria-hidden="true">
+        <div class="ns-bars"></div><div class="ns-strip"></div><div class="ns-pluge"></div>
+    </div>
+    <canvas class="ns-noise" id="nsNoise" width="192" height="108" aria-hidden="true"></canvas>
+    <div class="ns-scan" aria-hidden="true"></div>
+    <div class="ns-roll" aria-hidden="true"></div>
+    <div class="ns-glass" aria-hidden="true"></div>
+</div>
+<div class="ns-hint" aria-hidden="true">Click to change the channel</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="ns-osd">
+        <div class="ns-channel" aria-hidden="true"><span>&#9654; CH <span id="nsCh">04</span></span><span>AV&#8209;1</span></div>
+        <div class="ns-signal">NO SIGNAL</div>
+        <h1 class="error-title animate-slide-up">
+            {{ error_code }}
+            <br>
+            <span style="font-size: 0.28em; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;">{{ error_name }}</span>
+        </h1>
+        <p class="error-message animate-slide-up delay-1">
+            Please stand by.<br>The broadcast you were looking for isn't on the air.
+        </p>
+        {% if error_detail %}
+        <div class="error-detail animate-slide-up delay-2">
+            {{ error_detail }}
+        </div>
+        {% endif %}
+        <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Previous Channel
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var bg = document.getElementById('nsBg');
+        var screen = document.getElementById('nsScreen');
+        var canvas = document.getElementById('nsNoise');
+        var chEl = document.getElementById('nsCh');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var img = ctx.createImageData(canvas.width, canvas.height);
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var channel = 4;
+        var staticUntil = 0;
+
+        function noise() {
+            var d = img.data;
+            for (var i = 0; i < d.length; i += 4) {
+                var v = (Math.random() * 255) | 0;
+                d[i] = d[i + 1] = d[i + 2] = v;
+                d[i + 3] = 255;
+            }
+            ctx.putImageData(img, 0, 0);
+        }
+
+        noise();
+        if (reduced) return;
+
+        var last = 0;
+        function frame(now) {
+            if (now - last > 66) {   // ~15 fps is plenty for static
+                noise();
+                last = now;
+            }
+            if (staticUntil && now > staticUntil) {
+                staticUntil = 0;
+                bg.classList.remove('ns-static');
+            }
+            requestAnimationFrame(frame);
+        }
+
+        window.addEventListener('pointerdown', function (e) {
+            if (e.target.closest && e.target.closest('a')) return;
+            channel = (channel % 99) + 1;
+            if (chEl) chEl.textContent = (channel < 10 ? '0' : '') + channel;
+            screen.style.setProperty('--hue', ((channel * 47) % 360) + 'deg');
+            bg.classList.add('ns-static');
+            staticUntil = performance.now() + 380;
+        });
+
+        requestAnimationFrame(frame);
+    })();
+</script>
+{% endblock %}

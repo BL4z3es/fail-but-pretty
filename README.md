@@ -1,10 +1,10 @@
 # fail-but-pretty
 
-A FastAPI-based server with beautiful, interactive error pages that shuffle between 15 unique designs on every error. Features "Go Back" functionality to return to the previous page, deployed with easy-deploy and served via Caddy.
+A FastAPI-based server with beautiful, interactive error pages that shuffle between 20 unique designs on every error. Features "Go Back" functionality to return to the previous page, deployed with easy-deploy and served via Caddy.
 
 ## Features
 
-- **15 Unique Error Page Designs**: Each error triggers a randomly selected design:
+- **20 Unique Error Page Designs**: Each error triggers a randomly selected design:
   1. **Nebula** - Cosmic nebula with floating color clouds and twinkling stars
   2. **Geometric** - Floating geometric shapes over an animated grid
   3. **Matrix** - Classic Matrix rain with terminal output
@@ -20,6 +20,11 @@ A FastAPI-based server with beautiful, interactive error pages that shuffle betw
   13. **Deep Sea** - Bioluminescent jellyfish drifting in the dark; your pointer is the lantern, click to startle them
   14. **Ink** - The one light design: sumi-e ink blooms on paper around a brush-drawn circle and a red seal
   15. **Kaleidoscope** - Paint with light mirrored 6, 8 or 12 ways; it paints itself when idle
+  16. **Winter** - Snow over a pine forest at night with a lit cabin; the pointer steers the wind, click for a gust
+  17. **No Signal** - CRT colour bars, scanlines and static; click to change the channel
+  18. **Newspaper** - Front page of *The Daily Detour* in print, with a misregistered headline and a CORRECTION stamp
+  19. **Neon** - A flickering neon sign on a brick wall; click the sign to flip the breaker
+  20. **Topographic** - A living contour map; move to raise the ground, click to drop a lasting peak
 
 - **Go Back Functionality**: Smart navigation history tracking via sessions with referer fallback
 - **Accessibility**: Respects `prefers-reduced-motion` and `prefers-color-scheme`
@@ -108,7 +113,7 @@ fail-but-pretty/
 | Endpoint | Description |
 |----------|-------------|
 | `/` | Home page with feature showcase |
-| `/demo` | Interactive demo of all 15 error page designs |
+| `/demo` | Interactive demo of all 20 error page designs |
 | `/health` | Health check (returns JSON) |
 | `/error/{code}` | Trigger a specific HTTP error (400, 401, 403, 404, 405, 408, 418, 422, 429, 500, 502, 503, 504) |
 | `/preview/{template}?error_code=404` | Preview a specific error template |
