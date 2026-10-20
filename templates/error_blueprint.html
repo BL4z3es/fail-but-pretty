@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    :root {
+        --bg-primary: #0a2540;
+        --bg-secondary: #0e2f50;
+        --bg-tertiary: #123a62;
+        --fg-primary: #e8f4ff;
+        --fg-secondary: #9cc4e8;
+        --fg-muted: #6c9bc4;
+        --border-color: #2b5a8a;
+        --accent-primary: #7fd1ff;
+        --accent-secondary: #ffd166;
+        --glow-primary: rgba(127, 209, 255, 0.4);
+    }
+
+    .bp-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        overflow: hidden;
+        background-color: var(--bg-primary);
+        background-image:
+            linear-gradient(rgba(127, 209, 255, 0.22) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(127, 209, 255, 0.22) 1px, transparent 1px),
+            linear-gradient(rgba(127, 209, 255, 0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(127, 209, 255, 0.08) 1px, transparent 1px);
+        background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+        background-position: center;
+    }
+
+    .bp-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center, transparent 35%, rgba(4, 16, 32, 0.75) 100%);
+        pointer-events: none;
+    }
+
+    .bp-drawing {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 42%;
+        opacity: 0.85;
+    }
+
+    .bp-drawing * {
+        fill: none;
+        stroke: var(--accent-primary);
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+    }
+
+    .bp-drawing .draw {
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+        animation: bpDraw 1.6s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+        animation-delay: var(--d, 0s);
+    }
+
+    .bp-drawing .thin { stroke-width: 1; opacity: 0.7; }
+    .bp-drawing .gold { stroke: var(--accent-secondary); }
+
+    .bp-drawing .ghost {
+        stroke: var(--accent-secondary);
+        stroke-dasharray: 10 8;
+        opacity: 0;
+        animation: bpFadeIn 0.6s ease 2.6s forwards, bpMarch 1.2s linear infinite;
+    }
+
+    .bp-drawing text {
+        fill: var(--accent-secondary);
+        stroke: none;
+        font-family: var(--font-mono);
+        font-size: 15px;
+        letter-spacing: 0.12em;
+        opacity: 0;
+        animation: bpFadeIn 0.8s ease forwards;
+        animation-delay: var(--d, 2.4s);
+        vector-effect: none;
+    }
+
+    .bp-drawing text.blue { fill: var(--accent-primary); }
+
+    @keyframes bpDraw { to { stroke-dashoffset: 0; } }
+    @keyframes bpFadeIn { to { opacity: 1; } }
+    @keyframes bpMarch { to { stroke-dashoffset: -36; } }
+
+    /* Crosshair that follows the pointer, like a drafting table's sight line */
+    .bp-cross-x, .bp-cross-y {
+        position: fixed;
+        z-index: var(--z-bg);
+        background: rgba(255, 209, 102, 0.28);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .bp-cross-x { left: 0; right: 0; height: 1px; top: 0; }
+    .bp-cross-y { top: 0; bottom: 0; width: 1px; left: 0; }
+    .bp-has-pointer .bp-cross-x, .bp-has-pointer .bp-cross-y { opacity: 1; }
+
+    .bp-readout {
+        position: fixed;
+        left: var(--space-xl);
+        bottom: var(--space-xl);
+        z-index: var(--z-badge);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.1em;
+        color: var(--accent-secondary);
+        border: 1px solid var(--border-color);
+        background: rgba(10, 37, 64, 0.85);
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .bp-titleblock {
+        position: fixed;
+        top: var(--space-xl);
+        right: var(--space-xl);
+        z-index: var(--z-badge);
+        display: grid;
+        grid-template-columns: auto auto;
+        font-family: var(--font-mono);
+        font-size: 0.6875rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fg-secondary);
+        background: rgba(10, 37, 64, 0.85);
+        border: 1px solid var(--accent-primary);
+    }
+    .bp-titleblock span { padding: 0.35rem 0.75rem; border: 1px solid var(--border-color); margin: -0.5px; }
+    .bp-titleblock .k { color: var(--fg-muted); }
+    .bp-titleblock .v { color: var(--fg-primary); text-align: right; }
+    .bp-titleblock .hot { color: var(--accent-secondary); }
+
+    .error-container {
+        justify-content: flex-start;
+        padding-top: 11vh;
+    }
+
+    .error-title {
+        font-size: clamp(2rem, 6vw, 3.25rem);
+        color: var(--fg-primary);
+        -webkit-text-fill-color: var(--fg-primary);
+        background: none;
+        text-shadow: 0 2px 24px var(--bg-primary), 0 0 2px var(--bg-primary);
+    }
+    .error-message { margin-bottom: var(--space-lg); text-shadow: 0 1px 12px var(--bg-primary), 0 0 2px var(--bg-primary); }
+
+    @media (max-width: 768px) {
+        .bp-titleblock, .bp-readout { display: none; }
+        .error-container { padding-top: 14vh; }
+        .bp-drawing { height: 30%; }
+    }
+
+    @media (pointer: coarse) {
+        .bp-cross-x, .bp-cross-y, .bp-readout { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="bp-bg" role="img" aria-label="Blueprint of a bridge with a missing span">
+    <svg class="bp-drawing" viewBox="0 410 1600 430" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <!-- ground -->
+        <path class="draw" pathLength="1" style="--d:0s" d="M0 690 H560 M1040 690 H1600"/>
+        <path class="draw thin" pathLength="1" style="--d:0.3s" d="M0 720 H520 M1080 720 H1600"/>
+        <!-- left abutment -->
+        <path class="draw" pathLength="1" style="--d:0.2s" d="M560 690 V560 H400 V690"/>
+        <path class="draw" pathLength="1" style="--d:0.4s" d="M400 560 L400 520 H600 V560"/>
+        <!-- left truss -->
+        <path class="draw" pathLength="1" style="--d:0.6s" d="M80 520 H600 M80 450 H600 M80 450 V520"/>
+        <path class="draw thin" pathLength="1" style="--d:0.9s" d="M80 520 L145 450 L210 520 L275 450 L340 520 L405 450 L470 520 L535 450 L600 520"/>
+        <!-- right abutment -->
+        <path class="draw" pathLength="1" style="--d:0.2s" d="M1040 690 V560 H1200 V690"/>
+        <path class="draw" pathLength="1" style="--d:0.4s" d="M1000 520 H1200 V560"/>
+        <!-- right truss (stops short, as if unfinished) -->
+        <path class="draw" pathLength="1" style="--d:0.8s" d="M1000 520 H1520 M1000 450 H1520"/>
+        <path class="draw thin" pathLength="1" style="--d:1.1s" d="M1000 520 L1065 450 L1130 520 L1195 450 L1260 520 L1325 450"/>
+        <!-- the missing span -->
+        <path class="ghost" d="M600 520 H1000 M600 450 H1000"/>
+        <path class="draw gold" pathLength="1" style="--d:1.8s" d="M800 440 V470 M785 455 H815"/>
+        <circle class="draw gold" pathLength="1" style="--d:1.9s" cx="800" cy="485" r="26"/>
+        <path class="draw gold thin" pathLength="1" style="--d:2.1s" d="M782 467 L818 503 M818 467 L782 503"/>
+        <!-- dimension line across the gap -->
+        <path class="draw gold" pathLength="1" style="--d:2.0s" d="M600 760 H1000 M600 740 V780 M1000 740 V780"/>
+        <path class="draw gold" pathLength="1" style="--d:2.2s" d="M600 760 l14 -6 v12 z M1000 760 l-14 -6 v12 z"/>
+        <!-- callout -->
+        <path class="draw thin" pathLength="1" style="--d:2.2s" d="M826 470 L920 400 H1110"/>
+
+        <text x="800" y="800" text-anchor="middle" style="--d:2.4s">SPAN = UNKNOWN</text>
+        <text class="blue" x="1115" y="405" style="--d:2.7s">A &#183; PAGE EXPECTED HERE</text>
+        <text class="blue" x="90" y="430" style="--d:2.2s">B &#183; WHAT WAS BUILT</text>
+        <text class="blue" x="90" y="745" style="--d:2.4s">GRADE 0.00 &#183; SCALE 1:{{ error_code }}</text>
+    </svg>
+</div>
+<div class="bp-cross-x" id="bpCrossX" aria-hidden="true"></div>
+<div class="bp-cross-y" id="bpCrossY" aria-hidden="true"></div>
+<div class="bp-readout" id="bpReadout" aria-hidden="true">X 0000 &nbsp; Y 0000</div>
+<div class="bp-titleblock" aria-hidden="true">
+    <span class="k">Drawing</span><span class="v">FBP-{{ error_code }}</span>
+    <span class="k">Sheet</span><span class="v">{{ error_code }} / 599</span>
+    <span class="k">Status</span><span class="v hot">{{ error_name }}</span>
+    <span class="k">Rev</span><span class="v">Rejected</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1 class="error-title animate-slide-up">
+        {{ error_code }}
+        <br>
+        <span style="font-size: 0.5em; font-weight: 400;">{{ error_name }}</span>
+    </h1>
+    <p class="error-message animate-slide-up delay-1">
+        This sheet has no drawing.<br>The span you wanted was never built.
+    </p>
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-2">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Return to Previous Sheet
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var crossX = document.getElementById('bpCrossX');
+        var crossY = document.getElementById('bpCrossY');
+        var readout = document.getElementById('bpReadout');
+        if (!crossX || !crossY || !readout) return;
+
+        function pad(n) { return String(Math.max(0, Math.round(n))).padStart(4, '0'); }
+
+        window.addEventListener('pointermove', function (e) {
+            if (e.pointerType === 'touch') return;
+            document.body.classList.add('bp-has-pointer');
+            crossX.style.transform = 'translateY(' + e.clientY + 'px)';
+            crossY.style.transform = 'translateX(' + e.clientX + 'px)';
+            readout.innerHTML = 'X ' + pad(e.clientX) + ' &nbsp; Y ' + pad(e.clientY);
+        });
+
+        document.addEventListener('pointerleave', function () {
+            document.body.classList.remove('bp-has-pointer');
+        });
+    })();
+</script>
+{% endblock %}
