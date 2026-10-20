@@ -131,8 +131,10 @@ example.com {
 
 The imports are globs, so a site keeps its own error pages wherever the
 snippets are not installed. Only a browser loading a page (GET or HEAD,
-`Accept: text/html`) gets one; API clients, fetch calls, POSTed forms and
-assets get the application's response unchanged, and a 401 is never replaced.
+`Accept: text/html`, `Sec-Fetch-Mode: navigate` or none) gets one, whatever
+format the application's error was in; API clients, fetch and htmx calls,
+POSTed forms and assets get the application's response unchanged, and a 401 is
+never replaced.
 Caddy rewrites the request to `/render/{code}`, which answers with that status,
 inlines its stylesheet and script (the failing site owns `/static/`), and links
 "Go Back" to the Referer. Cookies are stripped both ways. If this service is

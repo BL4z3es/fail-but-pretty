@@ -9,14 +9,15 @@
 #
 # A glob, so a missing file is a no-op. deploy/install.sh installs it as
 # /etc/caddy/fail-but-pretty/site.caddy. Only a browser loading a page gets
-# one; any other request keeps Caddy's bare status, as before. If
+# one (the same test as proxy.caddy); any other request keeps Caddy's bare status, as before. If
 # fail-but-pretty is down too, so is this page, and Caddy answers with the
 # bare status.
 handle_errors {
 	@fbp_page {
 		method GET HEAD
 		header Accept *text/html*
-		expression `{err.status_code} >= 400`
+		not header HX-Request *
+		expression `{err.status_code} >= 400 && {http.request.header.Sec-Fetch-Mode} in ["", "navigate"]`
 	}
 	handle @fbp_page {
 		rewrite * /render/{err.status_code}

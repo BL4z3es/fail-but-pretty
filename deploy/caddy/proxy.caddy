@@ -9,19 +9,23 @@
 # and the site keeps its own error pages instead of failing to load.
 # deploy/install.sh installs it as /etc/caddy/fail-but-pretty/proxy.caddy.
 #
-# Replaced: an HTML error page the application sent in answer to a browser
-# loading a page (GET or HEAD, Accept naming text/html). Everything else is
-# passed through as it came, headers and all: JSON errors to API clients and
-# fetch() calls, a form re-rendered with a 400 after a POST, assets. 401 is
-# never replaced, since that would drop WWW-Authenticate.
+# Replaced: any error the application sent in answer to a browser loading a
+# page -- GET or HEAD, Accept naming text/html, and a Sec-Fetch-Mode of
+# navigate (or none, from a browser too old to send it). Whatever the error's
+# own format: a FastAPI app answers a browser's 404 with JSON. Everything else
+# is passed through as it came, headers and all: API clients, fetch() and
+# htmx calls (Sec-Fetch-Mode cors, HX-Request), a form re-rendered with a 400
+# after a POST, assets. 401 is never replaced, since that would drop
+# WWW-Authenticate.
 @fbp_error {
 	status 400 403 404 405 408 410 413 414 429 500 502 503 504
-	header Content-Type text/html*
 }
 handle_response @fbp_error {
 	@fbp_page {
 		method GET HEAD
 		header Accept *text/html*
+		not header HX-Request *
+		expression `{http.request.header.Sec-Fetch-Mode} in ["", "navigate"]`
 	}
 	handle @fbp_page {
 		rewrite * /render/{rp.status_code}
