@@ -341,22 +341,24 @@
     // Initialize on DOM Ready
     // ==========================================================================
 
+    // Expose utilities globally for error templates. This runs as soon as the
+    // script does, not on DOMContentLoaded: the templates' inline scripts come
+    // right after this one and check for window.fbp before the DOM is ready.
+    window.fbp = {
+        random,
+        randomInt,
+        clamp,
+        lerp,
+        prefersReducedMotion,
+        ParticleSystem,
+        initParallax,
+        createCanvas,
+        resizeCanvas
+    };
+
     function init() {
         enhanceGoBackButton();
         initScrollAnimations();
-
-        // Expose utilities globally for error templates
-        window.fbp = {
-            random,
-            randomInt,
-            clamp,
-            lerp,
-            prefersReducedMotion,
-            ParticleSystem,
-            initParallax,
-            createCanvas,
-            resizeCanvas
-        };
     }
 
     if (document.readyState === 'loading') {

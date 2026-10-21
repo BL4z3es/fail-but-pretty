@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    :root {
+        --bg-primary: #0b0a10;
+        --bg-secondary: #14121c;
+        --bg-tertiary: #1d1a29;
+        --fg-primary: #fff4fb;
+        --fg-secondary: #d9c3d6;
+        --fg-muted: #8f7a90;
+        --border-color: #3a2e45;
+        --accent-primary: #ff3fa4;
+        --accent-secondary: #30e6ff;
+        --glow-primary: rgba(255, 63, 164, 0.45);
+        --pink: #ff3fa4;
+        --cyan: #30e6ff;
+    }
+
+    .nn-bg {
+        position: fixed;
+        inset: 0;
+        z-index: var(--z-bg);
+        overflow: hidden;
+        background-color: #120d12;
+        /* Brick courses: mortar lines over a dark brick tone */
+        background-image:
+            repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0 3px, transparent 3px 34px),
+            repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0 3px, transparent 3px 96px),
+            repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0 3px, transparent 3px 96px),
+            linear-gradient(180deg, #1c1218, #130d12);
+        background-size: 100% 34px, 96px 68px, 96px 68px, 100% 100%;
+        background-position: 0 0, 0 0, 48px 34px, 0 0;
+    }
+
+    .nn-bg::before {
+        /* Light thrown on the wall by the sign, following the pointer a little */
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 52% 46% at calc(50% + var(--gx, 0px)) calc(46% + var(--gy, 0px)), rgba(255, 63, 164, 0.3), rgba(48, 230, 255, 0.08) 55%, transparent 80%);
+        mix-blend-mode: screen;
+        animation: nnPulse 4s ease-in-out infinite;
+    }
+
+    .nn-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.82) 100%);
+        pointer-events: none;
+    }
+
+    @keyframes nnPulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+    .nn-sign {
+        position: relative;
+        display: inline-block;
+        padding: var(--space-lg) var(--space-2xl);
+        margin-bottom: var(--space-xl);
+        border: 5px solid var(--pink);
+        border-radius: 2.2rem;
+        box-shadow: 0 0 6px var(--pink), 0 0 22px var(--pink), 0 0 60px rgba(255, 63, 164, 0.5),
+                    inset 0 0 6px var(--pink), inset 0 0 22px rgba(255, 63, 164, 0.5);
+        transition: opacity 0.2s;
+    }
+
+    .nn-sign.off {
+        animation: nnPowerCycle 1.1s steps(1) forwards;
+    }
+
+    @keyframes nnPowerCycle {
+        0% { opacity: 1; }
+        10% { opacity: 0.1; }
+        20% { opacity: 1; }
+        32% { opacity: 0.1; }
+        60% { opacity: 0.1; }
+        70% { opacity: 1; }
+        78% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+
+    .nn-code {
+        display: block;
+        font-family: var(--font-display);
+        font-weight: 300;
+        font-size: clamp(4rem, 17vw, 9rem);
+        line-height: 1;
+        letter-spacing: 0.08em;
+        color: #fff;
+        text-shadow: 0 0 4px #fff, 0 0 12px var(--pink), 0 0 28px var(--pink), 0 0 60px var(--pink), 0 0 110px var(--pink);
+    }
+
+    .nn-code i {
+        font-style: normal;
+        display: inline-block;
+    }
+
+    .nn-code i:nth-child(2) { animation: nnFlicker 5.5s linear infinite; }
+    .nn-code i:nth-child(3) { animation: nnFlicker 8s linear 2s infinite; }
+
+    @keyframes nnFlicker {
+        0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; text-shadow: 0 0 4px #fff, 0 0 12px var(--pink), 0 0 28px var(--pink), 0 0 60px var(--pink), 0 0 110px var(--pink); }
+        20%, 24%, 55% { opacity: 0.35; text-shadow: none; color: #8a3a6a; }
+    }
+
+    .nn-name {
+        display: block;
+        margin-top: var(--space-sm);
+        font-family: var(--font-display);
+        font-weight: 300;
+        font-size: clamp(1.1rem, 4vw, 1.9rem);
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        color: #e8fdff;
+        text-shadow: 0 0 4px #fff, 0 0 12px var(--cyan), 0 0 30px var(--cyan), 0 0 70px var(--cyan);
+    }
+
+    .nn-closed {
+        display: inline-block;
+        margin-bottom: var(--space-lg);
+        padding: 0.3rem 1.4rem;
+        border: 3px solid #ff5a4d;
+        border-radius: 0.6rem;
+        font-family: var(--font-display);
+        font-weight: 500;
+        letter-spacing: 0.4em;
+        text-indent: 0.4em;
+        color: #ffe9e6;
+        text-shadow: 0 0 4px #fff, 0 0 12px #ff5a4d, 0 0 28px #ff5a4d;
+        box-shadow: 0 0 8px #ff5a4d, inset 0 0 8px rgba(255, 90, 77, 0.6);
+        animation: nnBuzz 3s steps(1) infinite;
+    }
+
+    @keyframes nnBuzz {
+        0%, 90%, 100% { opacity: 1; }
+        91% { opacity: 0.5; }
+        93% { opacity: 1; }
+        95% { opacity: 0.6; }
+    }
+
+    .nn-hint {
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--fg-secondary);
+        opacity: 0.55;
+        pointer-events: none;
+        z-index: var(--z-badge);
+    }
+
+    .error-container { pointer-events: none; }
+    .error-container a { pointer-events: auto; }
+    .error-message { text-shadow: 0 2px 12px #0b0a10; }
+
+    @media (max-width: 768px) {
+        .nn-sign { padding: var(--space-md) var(--space-lg); border-width: 4px; }
+        .nn-hint { bottom: 84px; }
+    }
+</style>
+{% endblock %}
+
+{% block background %}
+<div class="nn-bg" id="nnBg" role="img" aria-label="A neon sign on a brick wall"></div>
+<div class="nn-hint" aria-hidden="true">Click the sign to flip the breaker</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <span class="nn-closed animate-slide-up">CLOSED</span>
+    <div class="nn-sign" id="nnSign">
+        <h1 class="error-title" style="all: unset; display: block;">
+            <span class="nn-code" aria-label="{{ error_code }}">{% for ch in error_code|string %}<i>{{ ch }}</i>{% endfor %}</span>
+            <span class="nn-name">{{ error_name }}</span>
+        </h1>
+    </div>
+    <p class="error-message animate-slide-up delay-1">
+        Sorry, we're closed.<br>Whatever you came for isn't here tonight.
+    </p>
+    {% if error_detail %}
+    <div class="error-detail animate-slide-up delay-2">
+        {{ error_detail }}
+    </div>
+    {% endif %}
+    <a href="{{ previous_url }}" class="btn btn-primary animate-slide-up delay-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back to the Street
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    (function () {
+        var bg = document.getElementById('nnBg');
+        var sign = document.getElementById('nnSign');
+        if (!bg || !sign) return;
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) return;
+
+        window.addEventListener('pointermove', function (e) {
+            bg.style.setProperty('--gx', ((e.clientX / window.innerWidth - 0.5) * 80) + 'px');
+            bg.style.setProperty('--gy', ((e.clientY / window.innerHeight - 0.5) * 60) + 'px');
+        });
+
+        // The container ignores the pointer, so hit-test the sign by hand
+        window.addEventListener('pointerdown', function (e) {
+            var r = sign.getBoundingClientRect();
+            if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+            sign.classList.remove('off');
+            void sign.offsetWidth;
+            sign.classList.add('off');
+        });
+    })();
+</script>
+{% endblock %}

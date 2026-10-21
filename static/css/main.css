@@ -1,6 +1,6 @@
 /* ==========================================================================
    fail-but-pretty - Main Stylesheet
-   Beautiful, interactive error pages with 15 unique designs
+   Beautiful, interactive error pages with 20 unique designs
    ========================================================================== */
 
 /* CSS Custom Properties - Design Tokens */
@@ -308,6 +308,25 @@ body {
 .btn-ghost:hover {
     color: var(--fg-primary);
     background: var(--bg-tertiary);
+}
+
+/* ==========================================================================
+   Background Canvases
+   A canvas is a replaced element: `inset: 0` alone leaves it at 300x150, and the
+   templates size their drawing buffer from its box. Template CSS can still
+   override the positioning; only the size is shared.
+   ========================================================================== */
+
+.particle-canvas,
+.liquid-canvas,
+.terminal-canvas,
+.aurora-canvas,
+.origami-canvas,
+.constellation-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
 }
 
 /* ==========================================================================

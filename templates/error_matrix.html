@@ -2,6 +2,17 @@
 
 {% block head %}
 <style>
+    /* Dark by design: keep this palette whatever the visitor's colour scheme. */
+    :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #12121a;
+        --bg-tertiary: #1a1a24;
+        --fg-primary: #f0f0f5;
+        --fg-secondary: #a0a0b0;
+        --fg-muted: #606070;
+        --border-color: #2a2a3a;
+    }
+
     .matrix-bg {
         position: fixed;
         inset: 0;
@@ -251,10 +262,13 @@
                 const col = document.createElement('div');
                 col.className = 'matrix-column';
                 col.style.left = drop.x + 'px';
-                col.style.top = drop.y + 'px';
-                col.style.animationDuration = (20 / drop.speed) + 's';
-                col.style.animationDelay = (Math.random() * 5) + 's';
-                col.style.opacity = 0.1 + Math.random() * 0.1;
+                // Start above the viewport and fall; a negative delay puts each column
+                // part-way through its fall on load, so the rain is already there.
+                const duration = 20 / drop.speed;
+                col.style.top = '-800px';
+                col.style.animationDuration = duration + 's';
+                col.style.animationDelay = (-Math.random() * duration) + 's';
+                col.style.opacity = 0.25 + Math.random() * 0.3;
 
                 let text = '';
                 for (let j = 0; j < drop.length; j++) {
